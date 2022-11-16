@@ -1,0 +1,5 @@
+.vscode/.*
+a.out
+conv
+basic.c
+basic.hex
