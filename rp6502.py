@@ -11,6 +11,7 @@ def run(args) -> subprocess.CompletedProcess:
 
 def device(name):
     ser.setPort(name)
+    ser.timeout = 0.2
     ser.open()
 
 def reset():
@@ -74,7 +75,7 @@ run(['64tass', '--mw65c02', 'min_mon.asm'])
 device('/dev/ttyACM0')
 reset()
 send_binfile('a.out')
-send('jmp $FE00')
+send('start')
 write('C')
 write('\r')
 ready()
