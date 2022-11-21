@@ -1,7 +1,13 @@
 # Example for controlling RP6502 RIA via UART
 
-import serial,sys
+import sys,subprocess,serial
 ser = serial.Serial()
+
+def run(args) -> subprocess.CompletedProcess:
+    cp = subprocess.run(args)
+    if cp.returncode != 0:
+        sys.exit()
+    return cp
 
 def device(name):
     ser.setPort(name)
@@ -64,6 +70,7 @@ def ready():
         if b'Ready\r\n' == ser.readline():
             break
 
+run(['64tass', '--mw65c02', 'min_mon.asm'])
 device('/dev/ttyACM0')
 reset()
 send_binfile('a.out')
