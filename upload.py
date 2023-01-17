@@ -1,115 +1,129 @@
-# Example for controlling RP6502 RIA via UART
+# Control RP6502 RIA via UART
 
-import sys,io,subprocess,serial,binascii
+import sys,io,time,subprocess,serial,binascii
+from typing import Union
 
-class Serial:
-    def __init__(self, name, timeout=0.2):
-        self.out = serial.Serial()
-        self.out.setPort(name)
-        self.out.timeout = timeout
-        self.out.open()
+class Monitor:
+    DEFAULT_TIMEOUT = 0.2
+    serial = serial.Serial()
+
+    def __init__(self, name, timeout=DEFAULT_TIMEOUT):
+        self.serial.setPort(name)
+        self.serial.timeout = timeout
+        self.serial.open()
 
     def send_break(self, duration=0.01):
         ''' Stop the 6502 and return to monitor. '''
-        self.out.read_all()
-        self.out.send_break(duration)
-        bytes = self.out.read_until(']')
-        if bytes[-1:] != b']':
-            sys.exit('Failed to break')
+        self.serial.read_all()
+        self.serial.send_break(duration)
+        self.wait_for_prompt(']')
 
-    def write(self, str):
-        ''' Send anything. Does not read reply. '''
-        self.out.write(bytes(str, 'utf-8'))
+    def command(self, str):
+        ''' Send one command and wait for next monitor prompt '''
+        self.serial.write(bytes(str, 'utf-8'))
+        self.serial.write(b'\r')
+        self.wait_for_prompt(']')
 
-    def basic_command(self, str):
-        ''' Send one line using "0\b" faux flow control. '''
-        self.out.write(b'0')
+    def reset(self):
+        ''' Start the 6502. '''
+        self.serial.write(b'START\r')
+        self.serial.read_until()
+
+    def binary(self, addr:int, data):
+        ''' Send data to memory using BINARY command. '''
+        command = f'BINARY ${addr:04X} ${len(data):03X} ${binascii.crc32(data):08X}\r'
+        self.serial.write(bytes(command, 'utf-8'))
+        self.serial.write(data)
+        self.wait_for_prompt(']')
+
+    def upload(self, name, data):
+        ''' Upload readable (file,rom,etc) to remote file "name" '''
+        self.serial.write(bytes(f'UPLOAD {name}\r', 'utf-8'))
+        self.wait_for_prompt('}')
+        data.seek(0)
         while True:
-            r = self.out.read()
-            if r == b'\x00': # huh, zeros?
-                continue
-            if r == b'0':
+            chunk = data.read(1024)
+            if len(chunk) == 0:
                 break
-            sys.exit("Error")
-        self.out.write(b'\b')
-        self.out.write(bytes(str, 'utf-8'))
-        self.out.write(b'\r')
-        self.out.read_until()
+            command = f'${len(chunk):03X} ${binascii.crc32(chunk):08X}\r'
+            self.serial.write(bytes(command, 'utf-8'))
+            self.serial.write(chunk)
+            self.wait_for_prompt('}')
+        self.serial.write(b'END\r', 'utf-8')
+        self.wait_for_prompt(']')
 
-    def wait_for_basic_ready(self):
-        ''' Wait for BASIC Ready. '''
-        while True:
-            #TODO timeout
-            if b'Ready\r\n' == self.out.readline():
-                break
-
-    def monitor_command(self, str):
-        ''' Send one line and wait for next monitor prompt '''
-        self.out.write(bytes(str, 'utf-8'))
-        self.out.write(b'\r')
-        while True:
-            r = self.out.read()
-            if r == b'?':
-                print(']'+str)
-                sys.exit('?'+self.out.read_until().decode('utf-8').strip())
-            if r == b']':
-                break
-            if r == '':
-                sys.exit('Timeout')
-
-    def send_binary(self, addr, data):
-        ''' Send data to memory using fast BINARY command. '''
-        command = f'BINARY ${addr:04X} ${len(data):04X} ${binascii.crc32(data):08X}\r'
-        self.out.write(bytes(command, 'utf-8'))
-        self.out.write(data)
-        while True:
-            r = self.out.read()
-            if r == b'?':
-                print(']'+command)
-                print('?'+self.out.read_until().decode('utf-8').strip())
-                sys.exit("Error")
-            if r == b']':
-                break
-
-    def reset_vector(self, addr=None):
+    def send_reset_vector(self, addr:Union[int, None]=None):
         ''' Set reset vector. Use start address of last file as default. '''
         if addr == None:
             addr = self.reset_vector_guess
         if addr == None:
-            sys.exit("Reset vector not set")
-        self.send_binary(0xFFFC, bytearray([addr & 0xFF, addr >> 8]))
+            raise RuntimeError("Reset vector not set")
+        self.binary(0xFFFC, bytearray([addr & 0xFF, addr >> 8]))
 
-    def send_file_to_memory(self, name, addr=None):
+    def send_file_to_memory(self, name, addr:Union[int, None]=None):
         ''' Send binary file. addr=None uses first two bytes as address.'''
         with open(name, 'rb') as f:
-            data = f.read()
-        pos = 0
-        if addr==None:
-            pos += 2
-            addr = data[0] + data[1] * 256
-        self.reset_vector_guess = addr
-        while pos < len(data):
-            size = len(data) - pos
-            if size > 1024:
-                size = 1024
-            self.send_binary(addr, data[pos:pos+size])
-            addr += size
-            pos += size
+            if addr==None:
+                data = f.read(2)
+                addr = data[0] + data[1] * 256
+            self.reset_vector_guess = addr
+            while True:
+                data = f.read(1024)
+                if len(data) == 0:
+                    break
+                self.binary(addr, data)
+                addr += len(data)
 
-    def upload(self, name, readable):
-        ''' Upload readable (file,rom,etc) to remote file "name" '''
-        data = readable.read()
-        #TODO
-        # print(data)
+    def wait_for_prompt(self, prompt, timeout=DEFAULT_TIMEOUT):
+        ''' Wait for prompt. '''
+        prompt = bytes(prompt, 'utf-8')
+        start = time.monotonic()
+        while True:
+            if len(prompt) == 1:
+                data = self.serial.read()
+            else:
+                data = self.serial.read_until()
+            if data[0:1] == b'?':
+                monitor_result = data.decode('utf-8')
+                monitor_result += self.serial.read_until().decode('utf-8').strip()
+                raise RuntimeError(monitor_result)
+            if data == prompt:
+                break
+            if len(data) == 0:
+                if time.monotonic() - start > timeout:
+                    raise TimeoutError()
+
+    def basic_command(self, str, timeout=DEFAULT_TIMEOUT):
+        ''' Send one line using "0\b" faux flow control. '''
+        self.serial.write(b'0')
+        start = time.monotonic()
+        while True:
+            r = self.serial.read()
+            if r == b'\x00': # huh, zeros?
+                continue
+            if r == b'0':
+                break
+            if time.monotonic() - start > timeout:
+                raise TimeoutError()
+        self.serial.write(b'\b')
+        self.serial.write(bytes(str, 'utf-8'))
+        self.serial.write(b'\r')
+        self.serial.read_until()
+
+    def basic_wait_for_ready(self, timeout=DEFAULT_TIMEOUT):
+        ''' Wait for BASIC Ready. '''
+        self.wait_for_prompt('Ready\r\n', timeout)
 
 
 class ROM:
     def __init__(self):
         self.out = io.BytesIO(b'')
 
-    def read(self):
-        self.out.seek(0)
-        return self.out.read()
+    def seek(self, pos: int) -> int:
+        return self.out.seek(pos)
+
+    def read(self, size: Union[int, None]) -> bytes:
+        return self.out.read(size)
 
     def caps(self, val):
         ''' Use CAPS mode for this ROM. '''
@@ -124,12 +138,12 @@ class ROM:
         self.out.write(bytes(f'RESET\n', 'utf-8'))
 
     def binary(self, addr, data):
-        ''' Send data to memory using fast BINARY command. '''
+        ''' Binary memory data. '''
         command = f'BINARY ${addr:04X} ${len(data):04X} ${binascii.crc32(data):08X}\n'
         self.out.write(bytes(command, 'utf-8'))
         self.out.write(data)
 
-    def binary_file(self, name, addr=None):
+    def binary_file(self, name, addr: Union[int, None]=None):
         ''' Binary memory data from file. addr=None uses first two bytes as address.'''
         with open(name, 'rb') as f:
             data = f.read()
@@ -146,15 +160,13 @@ class ROM:
             addr += size
             pos += size
 
-    def reset_vector(self, addr=None):
+    def reset_vector(self, addr: Union[int, None]=None):
         ''' Set reset vector. Use start address of last file as default. '''
         if addr == None:
             addr = self.reset_vector_guess
         if addr == None:
-            sys.exit("Reset vector not set")
+            raise RuntimeError("Reset vector not set")
         self.binary(0xFFFC, bytearray([addr & 0xFF, addr >> 8]))
-
-### Above should be importable module one day
 
 def run(args) -> subprocess.CompletedProcess:
     ''' Run a system process. For example, a compiler. '''
@@ -162,21 +174,27 @@ def run(args) -> subprocess.CompletedProcess:
     if cp.returncode != 0:
         sys.exit(cp.returncode)
 
+#################################################
+### Above should be importable module one day ###
+#################################################
+
 run(['64tass', '--mw65c02', 'min_mon.asm'])
 
-# ser=Serial('/dev/ttyACM0')
-# ser.send_break()
-# ser.send_file_to_memory('a.out')
-# ser.monitor_command('start')
-# ser.write('C')
-# ser.write('\r')
-# ser.wait_for_basic_ready()
-# ser.basic_command('10 PRINT "Hello, World!"')
-# ser.basic_command('RUN')
+mon=Monitor('/dev/ttyACM0')
+mon.send_break()
+mon.send_file_to_memory('a.out')
+mon.reset()
+mon.serial.write(b'C') # [C]old/[W]arm ?
+mon.serial.write(b'\r') # Memory size ?
+mon.basic_wait_for_ready(1)
+mon.basic_command('10 PRINT "Hello, World!"')
+mon.basic_command('RUN')
+mon.basic_wait_for_ready(1)
 
-rom=ROM()
-rom.binary_file('a.out')
-rom.reset()
+# rom=ROM()
+# rom.binary_file('a.out')
+# rom.reset()
 
-ser=Serial('/dev/ttyACM0')
-ser.upload('basic.rp6502', rom)
+# mon=Monitor('/dev/ttyACM0')
+# mon.send_break()
+# mon.upload('basic.rp6502', rom)
