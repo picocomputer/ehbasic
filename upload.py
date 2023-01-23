@@ -26,7 +26,7 @@ class Monitor:
 
     def reset(self):
         ''' Start the 6502. '''
-        self.serial.write(b'START\r')
+        self.serial.write(b'RESET\r')
         self.serial.read_until()
 
     def binary(self, addr:int, data):
@@ -49,7 +49,7 @@ class Monitor:
             self.serial.write(bytes(command, 'utf-8'))
             self.serial.write(chunk)
             self.wait_for_prompt('}')
-        self.serial.write(b'END\r', 'utf-8')
+        self.serial.write(b'END\r')
         self.wait_for_prompt(']')
 
     def send_reset_vector(self, addr:Union[int, None]=None):
@@ -118,6 +118,7 @@ class Monitor:
 class ROM:
     def __init__(self):
         self.out = io.BytesIO(b'')
+        self.out.write(b"RP6502\n")
 
     def seek(self, pos: int) -> int:
         return self.out.seek(pos)
@@ -125,21 +126,9 @@ class ROM:
     def read(self, size: Union[int, None]) -> bytes:
         return self.out.read(size)
 
-    def caps(self, val):
-        ''' Use CAPS mode for this ROM. '''
-        self.out.write(bytes(f'CAPS\n', 'utf-8'))
-
-    def phi2(self, khz):
-        ''' Set PHI2 in khz. '''
-        self.out.write(bytes(f'PHI2 {khz}\n', 'utf-8'))
-
-    def reset(self):
-        ''' Start the 6502. '''
-        self.out.write(bytes(f'RESET\n', 'utf-8'))
-
     def binary(self, addr, data):
         ''' Binary memory data. '''
-        command = f'BINARY ${addr:04X} ${len(data):04X} ${binascii.crc32(data):08X}\n'
+        command = f'${addr:04X} ${len(data):03X} ${binascii.crc32(data):08X}\n'
         self.out.write(bytes(command, 'utf-8'))
         self.out.write(data)
 
@@ -193,7 +182,6 @@ mon.basic_wait_for_ready(1)
 
 # rom=ROM()
 # rom.binary_file('a.out')
-# rom.reset()
 
 # mon=Monitor('/dev/ttyACM0')
 # mon.send_break()
