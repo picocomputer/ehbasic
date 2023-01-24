@@ -118,13 +118,20 @@ class Monitor:
 class ROM:
     def __init__(self):
         self.out = io.BytesIO(b'')
-        self.out.write(b"RP6502\n")
+        # Shebang.
+        self.out.write(b"#!RP6502\n")
 
     def seek(self, pos: int) -> int:
         return self.out.seek(pos)
 
     def read(self, size: Union[int, None]) -> bytes:
         return self.out.read(size)
+
+    def comment(self, str):
+        ''' Comments before binary data are used for help and info. '''
+        self.out.write(b'# ')
+        self.out.write(bytes(str, 'utf-8'))
+        self.out.write(b'\n')
 
     def binary(self, addr, data):
         ''' Binary memory data. '''
@@ -169,20 +176,38 @@ def run(args) -> subprocess.CompletedProcess:
 
 run(['64tass', '--mw65c02', 'min_mon.asm'])
 
-mon=Monitor('/dev/ttyACM0')
-mon.send_break()
-mon.send_file_to_memory('a.out')
-mon.reset()
-mon.serial.write(b'C') # [C]old/[W]arm ?
-mon.serial.write(b'\r') # Memory size ?
-mon.basic_wait_for_ready(1)
-mon.basic_command('10 PRINT "Hello, World!"')
-mon.basic_command('RUN')
-mon.basic_wait_for_ready(1)
+if False: # Send to memory and test
+    mon=Monitor('/dev/ttyACM0')
+    mon.send_break()
+    mon.send_file_to_memory('a.out')
+    mon.reset()
+    mon.serial.write(b'C') # [C]old/[W]arm ?
+    mon.serial.write(b'\r') # Memory size ?
+    mon.basic_wait_for_ready(1)
+    mon.basic_command('10 PRINT "Hello, World!"')
+    mon.basic_command('RUN')
+    mon.basic_wait_for_ready(1)
+else: # Upload to USB drive
+    rom=ROM()
+    rom.comment("Lee Davidson's EhBASIC 2.22p5 for the Picocomputer 6502")
+    rom.comment('')
+    rom.comment('EhBASIC is free but not copyright free. For non commercial use there is only')
+    rom.comment('one restriction, any derivative work should include, in any binary image')
+    rom.comment('distributed, the string "Derived from EhBASIC" and in any distribution that')
+    rom.comment('includes human readable files a file that includes the above string in a')
+    rom.comment('human readable form e.g. not as a comment in an HTML file.')
+    rom.comment('')
+    rom.comment('Referfence manual and more information is currently maintained here:')
+    rom.comment('http://retro.hansotten.nl/6502-sbc/lee-davison-web-site/enhanced-6502-basic/')
+    rom.comment('')
+    rom.comment('The source code and build tools for this distribution is here:')
+    rom.comment('https://github.com/picocomputer/ehbasic')
+    rom.comment('')
+    rom.comment('The original website went down after Lee passed away on September 21, 2013.')
+    rom.comment('The Internet Archive Wayback Machine has a snapshot from March 8, 2013:')
+    rom.comment('http://mycorner.no-ip.org/6502/ehbasic/index.html')
+    rom.binary_file('a.out')
 
-# rom=ROM()
-# rom.binary_file('a.out')
-
-# mon=Monitor('/dev/ttyACM0')
-# mon.send_break()
-# mon.upload('basic.rp6502', rom)
+    mon=Monitor('/dev/ttyACM0')
+    mon.send_break()
+    mon.upload('basic.rp6502', rom)
