@@ -170,13 +170,10 @@ def run(args) -> subprocess.CompletedProcess:
     if cp.returncode != 0:
         sys.exit(cp.returncode)
 
-#################################################
-### Above should be importable module one day ###
-#################################################
+###########################################
 
-run(['64tass', '--mw65c02', 'min_mon.asm'])
-
-if False: # Send to memory and test
+if len(sys.argv) == 2 and sys.argv[1].lower() == "run":
+    run(['64tass', '--mw65c02', 'min_mon.asm'])
     mon=Monitor('/dev/ttyACM0')
     mon.send_break()
     mon.send_file_to_memory('a.out')
@@ -187,7 +184,9 @@ if False: # Send to memory and test
     mon.basic_command('10 PRINT "Hello, World!"')
     mon.basic_command('RUN')
     mon.basic_wait_for_ready(1)
-else: # Upload to USB drive
+
+elif len(sys.argv) == 2 and sys.argv[1].lower() == "upload":
+    run(['64tass', '--mw65c02', 'min_mon.asm'])
     rom=ROM()
     rom.comment("Lee Davidson's EhBASIC 2.22p5 for the Picocomputer 6502")
     rom.comment('')
@@ -207,7 +206,9 @@ else: # Upload to USB drive
     rom.comment('The Internet Archive Wayback Machine has a snapshot from March 8, 2013:')
     rom.comment('http://mycorner.no-ip.org/6502/ehbasic/index.html')
     rom.binary_file('a.out')
-
     mon=Monitor('/dev/ttyACM0')
     mon.send_break()
     mon.upload('basic.rp6502', rom)
+
+else:
+    print("Usage: python3 basic.py run|upload")
