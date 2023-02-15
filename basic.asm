@@ -1006,6 +1006,10 @@ LAB_INLN
                               ; $08 as delete key (BACKSPACE on standard keyboard)
 LAB_134B
       JSR   LAB_PRNA          ; go print the character
+      LDA   #$20
+      JSR   LAB_PRNA          ; go print the character
+      LDA   #$08
+      JSR   LAB_PRNA          ; go print the character
       DEX                     ; decrement the buffer counter (delete)
       .text $2C               ; make LDX into BIT abs
 
@@ -1036,6 +1040,9 @@ LAB_1359
 LAB_1374
       CMP   #$08              ; compare with [BACKSPACE] (delete last character)
       BEQ   LAB_134B          ; go delete last character
+
+      CMP   #$20              ; compare with [SP]
+      BCC   LAB_1359          ; if < ignore character
 
 LAB_1378
       CPX   #Ibuffe-Ibuffs    ; compare character count with max
