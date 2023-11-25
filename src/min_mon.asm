@@ -5,7 +5,10 @@
 ; running [F6] then start the code with the RESET [CTRL][SHIFT]R. Just selecting RUN
 ; will do nothing, you'll still have to do a reset to run the code.
 
-      .include "basic.asm"
+
+.export _init
+
+.include "zeropage.asm"
 
 ; put the IRQ and MNI code in RAM so that it can be changed
 
@@ -24,11 +27,11 @@ ACIAsimrd   = IO_AREA+$02     ; simulated ACIA read port
 ; and wait for the user to select [C]old or [W]arm start. nothing else
 ; fits in less than 128 bytes
 
-      *=    $FE00             ; entry
+      .org  $D000             ; entry
 
 ; reset vector points here
 
-RES_vec
+_init:
       CLD                     ; clear decimal mode
       LDX   #$FF              ; empty stack
       TXS                     ; set the stack
@@ -36,7 +39,7 @@ RES_vec
 ; set up vectors and interrupt code, copy them to page 2
 
       LDY   #END_CODE-LAB_vec ; set index/count
-LAB_stlp
+LAB_stlp:
       LDA   LAB_vec-1,Y       ; get byte from interrupt code
       STA   VEC_IN-1,Y        ; save to RAM
       DEY                     ; decrement index/count
@@ -44,7 +47,7 @@ LAB_stlp
 
 ; now do the signon message, Y = $00 here
 
-LAB_signon
+LAB_signon:
       LDA   LAB_mess,Y        ; get byte from sign on message
       BEQ   LAB_nokey         ; exit loop if done
 
@@ -52,7 +55,7 @@ LAB_signon
       INY                     ; increment index
       BNE   LAB_signon        ; loop, branch always
 
-LAB_nokey
+LAB_nokey:
       JSR   V_INPT            ; call scan input device
       BCC   LAB_nokey         ; loop if no key
 
@@ -61,18 +64,18 @@ LAB_nokey
       BEQ   LAB_dowarm        ; branch if [W]arm start
 
       CMP   #'C'              ; compare with [C]old start
-      BNE   RES_vec           ; loop if not [C]old start
+      BNE   _init             ; loop if not [C]old start
 
       JSR  V_OUTP
       JMP   LAB_COLD          ; do EhBASIC cold start
 
-LAB_dowarm
+LAB_dowarm:
       JSR  V_OUTP
       JMP   LAB_WARM          ; do EhBASIC warm start
 
 ; byte out to simulated ACIA
 
-ACIAout
+ACIAout:
       BIT   ACIAsimst
       BPL   ACIAout           ; wait for FIFO
 
@@ -81,7 +84,7 @@ ACIAout
 
 ; byte in from simulated ACIA
 
-ACIAin
+ACIAin:
 
       BIT   ACIAsimst
       BVC   LAB_nobyw         ; branch if no byte waiting
@@ -90,15 +93,15 @@ ACIAin
       SEC                     ; flag byte received
       RTS
 
-LAB_nobyw
+LAB_nobyw:
       CLC                     ; flag no byte received
-no_load                       ; empty load vector for EhBASIC
-no_save                       ; empty save vector for EhBASIC
+no_load:                      ; empty load vector for EhBASIC
+no_save:                      ; empty save vector for EhBASIC
       RTS
 
 ; vector tables
 
-LAB_vec
+LAB_vec:
       .word ACIAin            ; byte in from simulated ACIA
       .word ACIAout           ; byte out to simulated ACIA
       .word no_load           ; null load vector for EhBASIC
@@ -106,7 +109,7 @@ LAB_vec
 
 ; EhBASIC IRQ support
 
-IRQ_CODE
+IRQ_CODE:
       PHA                     ; save A
       LDA   IrqBase           ; get the IRQ flag byte
       LSR                     ; shift the set b7 to b6, and on down ...
@@ -117,7 +120,7 @@ IRQ_CODE
 
 ; EhBASIC NMI support
 
-NMI_CODE
+NMI_CODE:
       PHA                     ; save A
       LDA   NmiBase           ; get the NMI flag byte
       LSR                     ; shift the set b7 to b6, and on down ...
@@ -126,18 +129,11 @@ NMI_CODE
       PLA                     ; restore A
       RTI
 
-END_CODE
+END_CODE:
 
-LAB_mess
-      .text $0D,$0A,"6502 EhBASIC [C]old/[W]arm ?",$00
+LAB_mess:
+      .byte $0D,$0A,"6502 EhBASIC [C]old/[W]arm ?",$00
                               ; sign on string
 
-; system vectors
 
-      *=    $FFFA
-
-      .word NMI_vec           ; NMI vector
-      .word RES_vec           ; RESET vector
-      .word IRQ_vec           ; IRQ vector
-
-;      .end RES_vec            ; set start at reset vector
+.include "basic.asm"

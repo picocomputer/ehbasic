@@ -1,0 +1,6 @@
+[
+    {
+        "name": "RP6502",
+        "toolchainFile": "${workspaceRoot}/tools/rp6502.cmake"
+    }
+]

@@ -1,0 +1,17 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.cStandard": "c99",
+    "C_Cpp.default.systemIncludePath": [
+        "/share/cc65/include",
+        "/usr/share/cc65/include",
+    ],
+    "C_Cpp.default.defines": [
+        "__cdecl__=",
+        "__fastcall__=",
+        "asm(...)=",
+    ],
+    "cmake.showSystemKits": false,
+    "cmake.preferredGenerators": [
+        "Unix Makefiles"
+    ],
+}
