@@ -1,18 +1,18 @@
 #!RP6502
 # Lee Davidson's EhBASIC 2.22p5 for the Picocomputer 6502
-# .
+#
 # EhBASIC is free but not copyright free. For non commercial use there is only
 # one restriction, any derivative work should include, in any binary image
 # distributed, the string "Derived from EhBASIC" and in any distribution that
 # includes human readable files a file that includes the above string in a
 # human readable form e.g. not as a comment in an HTML file.
-# .
+#
 # Referfence manual and more information is currently maintained here:
 # http://retro.hansotten.nl/6502-sbc/lee-davison-web-site/enhanced-6502-basic/
-# .
+#
 # The source code and build tools for this distribution is here:
 # https://github.com/picocomputer/ehbasic
-# .
+#
 # The original website went down after Lee passed away on September 21, 2013.
 # The Internet Archive Wayback Machine has a snapshot from March 8, 2013:
 # http://mycorner.no-ip.org/6502/ehbasic/index.html

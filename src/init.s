@@ -1,35 +1,9 @@
-; minimal monitor for EhBASIC and 6502 simulator V1.05
-; tabs converted to space, tabwidth=6
-
-; To run EhBASIC on the simulator load and assemble [F7] this file, start the simulator
-; running [F6] then start the code with the RESET [CTRL][SHIFT]R. Just selecting RUN
-; will do nothing, you'll still have to do a reset to run the code.
-
-
 .export _init
-
-.include "zeropage.asm"
 
 ; put the IRQ and MNI code in RAM so that it can be changed
 
 IRQ_vec     = VEC_SV+2        ; IRQ code vector
 NMI_vec     = IRQ_vec+$0A     ; NMI code vector
-
-; setup for the 6502 simulator environment
-
-IO_AREA     = $FFE0           ; set I/O area for this monitor
-
-ACIAsimst   = IO_AREA+$00     ; simulated ACIA status
-ACIAsimwr   = IO_AREA+$01     ; simulated ACIA write port
-ACIAsimrd   = IO_AREA+$02     ; simulated ACIA read port
-
-; now the code. all this does is set up the vectors and interrupt code
-; and wait for the user to select [C]old or [W]arm start. nothing else
-; fits in less than 128 bytes
-
-      .org  $D000             ; entry
-
-; reset vector points here
 
 _init:
       CLD                     ; clear decimal mode
@@ -45,51 +19,37 @@ LAB_stlp:
       DEY                     ; decrement index/count
       BNE   LAB_stlp          ; loop if more to do
 
-; now do the signon message, Y = $00 here
+; Automate "6502 EhBASIC [C]old/[W]arm ?"
+; Use CTRL-ALT-DEL then RESET for warm start.
+; Load the virtual ROM again for a cold start.
 
 LAB_signon:
-      LDA   LAB_mess,Y        ; get byte from sign on message
-      BEQ   LAB_nokey         ; exit loop if done
-
-      JSR   V_OUTP            ; output character
-      INY                     ; increment index
-      BNE   LAB_signon        ; loop, branch always
-
-LAB_nokey:
-      JSR   V_INPT            ; call scan input device
-      BCC   LAB_nokey         ; loop if no key
-
-      AND   #$DF              ; mask xx0x xxxx, ensure upper case
-      CMP   #'W'              ; compare with [W]arm start
-      BEQ   LAB_dowarm        ; branch if [W]arm start
-
-      CMP   #'C'              ; compare with [C]old start
-      BNE   _init             ; loop if not [C]old start
-
-      JSR  V_OUTP
-      JMP   LAB_COLD          ; do EhBASIC cold start
-
-LAB_dowarm:
-      JSR  V_OUTP
+      CLC                     ; Modifies to SEC after first run
+      BCC   AutoCold
       JMP   LAB_WARM          ; do EhBASIC warm start
+
+AutoCold:
+      LDA   #$38              ; SEC
+      STA   LAB_signon
+      JMP   LAB_COLD          ; do EhBASIC cold start
 
 ; byte out to simulated ACIA
 
 ACIAout:
-      BIT   ACIAsimst
+      BIT   RIA_READY
       BPL   ACIAout           ; wait for FIFO
 
-      STA   ACIAsimwr         ; save byte to simulated ACIA
+      STA   RIA_TX            ; save byte to simulated ACIA
       RTS
 
 ; byte in from simulated ACIA
 
 ACIAin:
 
-      BIT   ACIAsimst
+      BIT   RIA_READY
       BVC   LAB_nobyw         ; branch if no byte waiting
 
-      LDA   ACIAsimrd         ; get byte from simulated ACIA
+      LDA   RIA_RX            ; get byte from simulated ACIA
       SEC                     ; flag byte received
       RTS
 
@@ -130,10 +90,3 @@ NMI_CODE:
       RTI
 
 END_CODE:
-
-LAB_mess:
-      .byte $0D,$0A,"6502 EhBASIC [C]old/[W]arm ?",$00
-                              ; sign on string
-
-
-.include "basic.asm"

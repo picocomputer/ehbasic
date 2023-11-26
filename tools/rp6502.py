@@ -172,6 +172,9 @@ class ROM:
                 if se:
                     self.add_help(command[se.start(1)+2:].rstrip())
                     continue
+                if re.search("^ *#$", command):
+                    self.add_help('')
+                    continue
                 se = re.search("^ *([^ ]+) *([^ ]+) *([^ ]+) *$", command)
                 if se:
                     def str_to_address(str):
