@@ -39,6 +39,7 @@
 ;      5.5     garbage collection may cause an overlap with temporary strings
 ;      5.6     floating point multiply rounding bug
 ;      5.7     VAL() may cause string variables to be trashed
+;      6.0     add klaus2m5's mixed case mode. (https://github.com/Klaus2m5/6502_EhBASIC_V2.22/blob/master/mixed_case_keywords_mod.txt)
 
 .org     $D000
 
