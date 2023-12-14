@@ -1,16 +1,25 @@
-.export _init
+.include "rp6502.inc"
+.include "zp.inc"
+
+.import LAB_COLD, VEC_IN, VEC_SV
+.export _min_mon
 
 ; put the IRQ and MNI code in RAM so that it can be changed
 
-IRQ_vec     = VEC_SV+2        ; IRQ code vector
-NMI_vec     = IRQ_vec+$0A     ; NMI code vector
-
-_init:
-      CLD                     ; clear decimal mode
-      LDX   #$FF              ; empty stack
-      TXS                     ; set the stack
+IRQ_vec    = VEC_SV+2         ; IRQ code vector
+NMI_vec    = IRQ_vec+$0A      ; NMI code vector
 
 ; set up vectors and interrupt code, copy them to page 2
+
+_min_mon:
+      LDA   #<IRQ_vec
+      STA   $FFFE
+      LDA   #>IRQ_vec
+      STA   $FFFF
+      LDA   #<NMI_vec
+      STA   $FFFA
+      LDA   #>NMI_vec
+      STA   $FFFB
 
       LDY   #END_CODE-LAB_vec ; set index/count
 LAB_stlp:
