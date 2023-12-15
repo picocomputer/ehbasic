@@ -4,7 +4,13 @@
 LAB_WARM          = $00       ; BASIC warm start entry point
 Wrmjpl            = LAB_WARM+1; BASIC warm start vector jump low byte
 Wrmjph            = LAB_WARM+2; BASIC warm start vector jump high byte
-
+;                 = $03       ; unused
+;                 = $04       ; unused
+;                 = $05       ; unused
+;                 = $06       ; unused
+;                 = $07       ; unused
+;                 = $08       ; unused
+;                 = $09       ; unused
 Usrjmp            = $0A       ; USR function JMP address
 Usrjpl            = Usrjmp+1  ; USR function JMP vector low byte
 Usrjph            = Usrjmp+2  ; USR function JMP vector high byte
@@ -19,6 +25,9 @@ Itemph            = Itempl+1  ; temporary integer high byte
 nums_1            = Itempl    ; number to bin/hex string convert MSB
 nums_2            = nums_1+1  ; number to bin/hex string convert
 nums_3            = nums_1+2  ; number to bin/hex string convert LSB
+
+;                 = $14       ; Start of cc65 registers
+;                 = $5A       ; End of cc65 registers
 
 Srchc             = $5B       ; search character
 Temp3             = Srchc     ; temp byte used in number routines
@@ -244,14 +253,12 @@ NmiBase           = $DC       ; NMI handler enabled/setup/triggered flags
                               ; 7   interrupt enabled
                               ; 6   interrupt setup
                               ; 5   interrupt happened
-;                 = $DD       ; NMI handler addr low byte
-;                 = $DE       ; NMI handler addr high byte
-IrqBase           = $DF       ; IRQ handler enabled/setup/triggered flags
-;                 = $E0       ; IRQ handler addr low byte
-;                 = $E1       ; IRQ handler addr high byte
+IrqBase           = $DD       ; IRQ handler enabled/setup/triggered flags
 
-; *** removed unused comments for $DE-$E1
-
+;                 = $DE       ; unused
+;                 = $DF       ; unused
+;                 = $E0       ; unused
+;                 = $E1       ; unused
 ;                 = $E2       ; unused
 ;                 = $E3       ; unused
 ;                 = $E4       ; unused
