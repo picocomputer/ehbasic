@@ -1,18 +1,24 @@
 ; zero page use ..
 
 ; the following locations are bulk initialized from StrTab at LAB_GMEM
-LAB_WARM          = $40       ; BASIC warm start entry point
+LAB_WARM          = $00       ; BASIC warm start entry point
 Wrmjpl            = LAB_WARM+1; BASIC warm start vector jump low byte
 Wrmjph            = LAB_WARM+2; BASIC warm start vector jump high byte
-
-Usrjmp            = $4A       ; USR function JMP address
+;                 = $03       ; unused
+;                 = $04       ; unused
+;                 = $05       ; unused
+;                 = $06       ; unused
+;                 = $07       ; unused
+;                 = $08       ; unused
+;                 = $09       ; unused
+Usrjmp            = $0A       ; USR function JMP address
 Usrjpl            = Usrjmp+1  ; USR function JMP vector low byte
 Usrjph            = Usrjmp+2  ; USR function JMP vector high byte
-Nullct            = $4D       ; nulls output after each line
-TPos              = $4E       ; BASIC terminal position byte
-TWidth            = $4F       ; BASIC terminal width byte
-Iclim             = $50       ; input column limit
-Itempl            = $51       ; temporary integer low byte
+Nullct            = $0D       ; nulls output after each line
+TPos              = $0E       ; BASIC terminal position byte
+TWidth            = $0F       ; BASIC terminal width byte
+Iclim             = $10       ; input column limit
+Itempl            = $11       ; temporary integer low byte
 Itemph            = Itempl+1  ; temporary integer high byte
 ; end bulk initialize from StrTab at LAB_GMEM
 
@@ -20,13 +26,8 @@ nums_1            = Itempl    ; number to bin/hex string convert MSB
 nums_2            = nums_1+1  ; number to bin/hex string convert
 nums_3            = nums_1+2  ; number to bin/hex string convert LSB
 
-;                 = $54       ; unused
-;                 = $55       ; unused
-;                 = $56       ; unused
-;                 = $57       ; unused
-;                 = $58       ; unused
-;                 = $59       ; unused
-;                 = $5A       ; unused
+;                 = $14       ; Start of cc65 registers
+;                 = $5A       ; End of cc65 registers
 
 Srchc             = $5B       ; search character
 Temp3             = Srchc     ; temp byte used in number routines
@@ -253,6 +254,7 @@ NmiBase           = $DC       ; NMI handler enabled/setup/triggered flags
                               ; 6   interrupt setup
                               ; 5   interrupt happened
 IrqBase           = $DD       ; IRQ handler enabled/setup/triggered flags
+
 ;                 = $DE       ; unused
 ;                 = $DF       ; unused
 ;                 = $E0       ; unused
