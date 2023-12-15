@@ -687,9 +687,9 @@ LAB_INLN:
 
                               ; $08 as delete key (BACKSPACE on standard keyboard)
 LAB_134B:
-      JSR   LAB_PRNA          ; go print the character
+      JSR   V_OUTP            ; back over the character
       LDA   #$20
-      JSR   LAB_PRNA          ; go print the character
+      JSR   V_OUTP            ; erase the character
       LDA   #$08
       JSR   LAB_PRNA          ; go print the character
       DEX                     ; decrement the buffer counter (delete)
