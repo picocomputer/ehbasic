@@ -252,14 +252,11 @@ NmiBase           = $DC       ; NMI handler enabled/setup/triggered flags
                               ; 7   interrupt enabled
                               ; 6   interrupt setup
                               ; 5   interrupt happened
-;                 = $DD       ; NMI handler addr low byte
-;                 = $DE       ; NMI handler addr high byte
-IrqBase           = $DF       ; IRQ handler enabled/setup/triggered flags
-;                 = $E0       ; IRQ handler addr low byte
-;                 = $E1       ; IRQ handler addr high byte
-
-; *** removed unused comments for $DE-$E1
-
+IrqBase           = $DD       ; IRQ handler enabled/setup/triggered flags
+;                 = $DE       ; unused
+;                 = $DF       ; unused
+;                 = $E0       ; unused
+;                 = $E1       ; unused
 ;                 = $E2       ; unused
 ;                 = $E3       ; unused
 ;                 = $E4       ; unused

@@ -1,6 +1,6 @@
 .include "zp.inc"
 
-.export LAB_COLD, VEC_IN, VEC_SV
+.export LAB_COLD, VEC_IN
 .export _LAB_1B5B_CALL1, _LAB_1B5B_CALL2
 
 ; token values needed for BASIC
@@ -141,24 +141,21 @@ ccnull            = ccbyte+1  ; BASIC CTRL-C byte timeout
 VEC_CC            = ccnull+1  ; ctrl c check vector
 ; end bulk initialize from PG2_TABS at LAB_COLD
 
-; the following locations are bulk initialized by min_mon.asm from LAB_vec at LAB_stlp
+; the following locations are bulk initialized by min_mon
 VEC_IN            = VEC_CC+2  ; input vector
 VEC_OUT           = VEC_IN+2  ; output vector
 VEC_LD            = VEC_OUT+2 ; load vector
 VEC_SV            = VEC_LD+2  ; save vector
-; end bulk initialize by min_mon.asm from LAB_vec at LAB_stlp
+; end bulk initialize by min_mon
 
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80,
 ; the input buffer must not cross a page boundary and must not overlap with
 ; program RAM pages!
-
-;Ibuffs            = IRQ_vec+$14
-Ibuffs            = VEC_SV+$16
-                              ; start of input buffer after IRQ/NMI code
+Ibuffs            = VEC_SV+1  ; start of input buffer
 Ibuffe            = Ibuffs+$50; end of input buffer
 
 Ram_base          = $0300     ; start of user RAM (set as needed, should be page aligned)
-Ram_top           = $D000     ; end of user RAM+1 (set as needed, should be page aligned)
+Ram_top           = $C000     ; end of user RAM+1 (set as needed, should be page aligned)
 
 Stack_floor       = 16        ; bytes left free on stack for background interrupts
 

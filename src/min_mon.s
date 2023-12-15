@@ -1,46 +1,73 @@
 .include "rp6502.inc"
 .include "zp.inc"
 
-.import LAB_COLD, VEC_IN, VEC_SV
+.import LAB_COLD, VEC_IN
 .export _min_mon
 
-; put the IRQ and MNI code in RAM so that it can be changed
-
-IRQ_vec    = VEC_SV+2         ; IRQ code vector
-NMI_vec    = IRQ_vec+$0A      ; NMI code vector
-
-; set up vectors and interrupt code, copy them to page 2
-
-_min_mon:
-      LDA   #<IRQ_vec
-      STA   $FFFE
-      LDA   #>IRQ_vec
-      STA   $FFFF
-      LDA   #<NMI_vec
-      STA   $FFFA
-      LDA   #>NMI_vec
-      STA   $FFFB
-
-      LDY   #END_CODE-LAB_vec ; set index/count
-LAB_stlp:
-      LDA   LAB_vec-1,Y       ; get byte from interrupt code
-      STA   VEC_IN-1,Y        ; save to RAM
-      DEY                     ; decrement index/count
-      BNE   LAB_stlp          ; loop if more to do
-
-; Automate "6502 EhBASIC [C]old/[W]arm ?"
+; Instead of "6502 EhBASIC [C]old/[W]arm ?"
 ; Use CTRL-ALT-DEL then RESET for warm start.
 ; Load the virtual ROM again for a cold start.
 
-LAB_signon:
+_min_mon:
       CLC                     ; Modifies to SEC after first run
       BCC   AutoCold
       JMP   LAB_WARM          ; do EhBASIC warm start
 
 AutoCold:
       LDA   #$38              ; SEC
-      STA   LAB_signon
+      STA   _min_mon
+
+; Setup vectors for a cold start
+
+      LDA   #<IRQ_CODE
+      STA   $FFFE
+      LDA   #>IRQ_CODE
+      STA   $FFFF
+
+      LDA   #<NMI_CODE
+      STA   $FFFA
+      LDA   #>NMI_CODE
+      STA   $FFFB
+
+      LDY   #END_CODE-LAB_vec ; set index/count
+VecCopy:
+      LDA   LAB_vec-1,Y       ; get byte from vector table
+      STA   VEC_IN-1,Y        ; save to zero page RAM
+      DEY                     ; decrement index/count
+      BNE   VecCopy           ; loop if more to do
+
       JMP   LAB_COLD          ; do EhBASIC cold start
+
+; vector table
+
+LAB_vec:
+      .word ACIAin            ; byte in from simulated ACIA
+      .word ACIAout           ; byte out to simulated ACIA
+      .word no_load           ; null load vector for EhBASIC
+      .word no_save           ; null save vector for EhBASIC
+END_CODE:
+
+; EhBASIC IRQ support
+
+IRQ_CODE:
+      PHA                     ; save A
+      LDA   IrqBase           ; get the IRQ flag byte
+      LSR                     ; shift the set b7 to b6, and on down ...
+      ORA   IrqBase           ; OR the original back in
+      STA   IrqBase           ; save the new IRQ flag byte
+      PLA                     ; restore A
+      RTI
+
+; EhBASIC NMI support
+
+NMI_CODE:
+      PHA                     ; save A
+      LDA   NmiBase           ; get the NMI flag byte
+      LSR                     ; shift the set b7 to b6, and on down ...
+      ORA   NmiBase           ; OR the original back in
+      STA   NmiBase           ; save the new NMI flag byte
+      PLA                     ; restore A
+      RTI
 
 ; byte out to simulated ACIA
 
@@ -67,35 +94,3 @@ LAB_nobyw:
 no_load:                      ; empty load vector for EhBASIC
 no_save:                      ; empty save vector for EhBASIC
       RTS
-
-; vector tables
-
-LAB_vec:
-      .word ACIAin            ; byte in from simulated ACIA
-      .word ACIAout           ; byte out to simulated ACIA
-      .word no_load           ; null load vector for EhBASIC
-      .word no_save           ; null save vector for EhBASIC
-
-; EhBASIC IRQ support
-
-IRQ_CODE:
-      PHA                     ; save A
-      LDA   IrqBase           ; get the IRQ flag byte
-      LSR                     ; shift the set b7 to b6, and on down ...
-      ORA   IrqBase           ; OR the original back in
-      STA   IrqBase           ; save the new IRQ flag byte
-      PLA                     ; restore A
-      RTI
-
-; EhBASIC NMI support
-
-NMI_CODE:
-      PHA                     ; save A
-      LDA   NmiBase           ; get the NMI flag byte
-      LSR                     ; shift the set b7 to b6, and on down ...
-      ORA   NmiBase           ; OR the original back in
-      STA   NmiBase           ; save the new NMI flag byte
-      PLA                     ; restore A
-      RTI
-
-END_CODE:

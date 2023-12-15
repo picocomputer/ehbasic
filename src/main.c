@@ -7,8 +7,8 @@ extern void LAB_1B5B_CALL2(void);
 
 void main()
 {
-    // This replaces patch 2.22p5.3
-    // until a better solution is found
+    // EhBASIC has restrictions on certain memory locations.
+    // Refuse to run if these fail.
     if (((int)LAB_1B5B_CALL1 & 0xFF) == 0xFD ||
         ((int)LAB_1B5B_CALL2 & 0xFF) == 0xFD)
         exit(1);
