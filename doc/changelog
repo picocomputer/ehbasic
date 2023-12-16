@@ -41,3 +41,4 @@ Changes made after moving to CC65 for RP6502 project
 cc1  add klaus2m5's mixed case mode.
      https://github.com/Klaus2m5/6502_EhBASIC_V2.22/blob/master/mixed_case_keywords_mod.txt
 cc2  alter 2.22p5 5.3 to make compatible with CC65.
+cc3  removed use of page 2

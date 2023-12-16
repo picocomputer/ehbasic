@@ -11,6 +11,6 @@ void main()
         ((unsigned)&LAB_1B5B_CALL2 & 0xFF) == 0xFD)
         exit(1);
 
-    /* Start EhBASIC from its "monitor" */
-    min_mon();
+    /* Start EhBASIC from a "minmal monitor" */
+    min_mon(); /* never returns */
 }
