@@ -1,7 +1,10 @@
 .include "zp.inc"
 
-.export LAB_COLD, VEC_IN
+.export LAB_COLD
 .export _LAB_1B5B_CALL1, _LAB_1B5B_CALL2
+
+.import V_INPT, V_OUTP, V_LOAD, V_SAVE
+.import __RAM_START__, __RAM_SIZE__, __STACKSIZE__, __IBUFFSIZE__
 
 ; token values needed for BASIC
 
@@ -133,29 +136,14 @@ LAB_SKFE          = LAB_STAK+$FE
 LAB_SKFF          = LAB_STAK+$FF
                               ; flushed stack address
 
-; the following locations are bulk initialized from PG2_TABS at LAB_COLD
-ccflag            = $0200     ; BASIC CTRL-C flag, 00 = enabled, 01 = dis
-ccbyte            = ccflag+1  ; BASIC CTRL-C byte
-ccnull            = ccbyte+1  ; BASIC CTRL-C byte timeout
-
-VEC_CC            = ccnull+1  ; ctrl c check vector
-; end bulk initialize from PG2_TABS at LAB_COLD
-
-; the following locations are bulk initialized by min_mon
-VEC_IN            = VEC_CC+2  ; input vector
-VEC_OUT           = VEC_IN+2  ; output vector
-VEC_LD            = VEC_OUT+2 ; load vector
-VEC_SV            = VEC_LD+2  ; save vector
-; end bulk initialize by min_mon
-
 ; Ibuffs can now be anywhere in RAM, ensure that the max length is < $80,
 ; the input buffer must not cross a page boundary and must not overlap with
 ; program RAM pages!
-Ibuffs            = VEC_SV+1  ; start of input buffer
-Ibuffe            = Ibuffs+$50; end of input buffer
+Ibuffs            = __RAM_START__ + __RAM_SIZE__ + __STACKSIZE__;
+Ibuffe            = Ibuffs + __IBUFFSIZE__;
 
-Ram_base          = $0300     ; start of user RAM (set as needed, should be page aligned)
-Ram_top           = $C000     ; end of user RAM+1 (set as needed, should be page aligned)
+Ram_base          = $0200         ; start of user RAM (set as needed, should be page aligned)
+Ram_top           = __RAM_START__ ; end of user RAM+1 (set as needed, should be page aligned)
 
 Stack_floor       = 16        ; bytes left free on stack for background interrupts
 
@@ -164,14 +152,6 @@ Stack_floor       = 16        ; bytes left free on stack for background interrup
 ; new page 2 initialisation, copy block to ccflag on
 
 LAB_COLD:
-      LDY   #PG2_TABE-PG2_TABS-1
-                              ; byte count-1
-LAB_2D13:
-      LDA   PG2_TABS,Y        ; get byte
-      STA   ccflag,Y          ; store in page 2
-      DEY                     ; decrement count
-      BPL   LAB_2D13          ; loop if not done
-
       LDX   #$FF              ; set byte
       STX   Clineh            ; set current line high byte (set immediate mode)
       TXS                     ; reset stack pointer
@@ -730,7 +710,7 @@ LAB_1376:
       BCC   LAB_1359          ; if < ignore character
 
 LAB_1378:
-      CPX   #Ibuffe-Ibuffs    ; compare character count with max
+      CPX   #<(Ibuffe-Ibuffs) ; compare character count with max
       BCS   LAB_138E          ; skip store and do [BELL] if buffer full
 
       STA   Ibuffs,X          ; else store in buffer
@@ -913,12 +893,12 @@ LAB_142A:
       INY                     ; adjust for line copy
 ; *** begin patch for when Ibuffs is $xx00 - Daryl Rictor ***
 ; *** insert
-      .IF   Ibuffs&$FF=0
-      LDA   Bpntrl            ; test for $00
-      BNE   LAB_142P          ; not $00
-      DEC   Bpntrh            ; allow for increment when $xx00
-LAB_142P:
-      .ENDIF
+;       .IF   Ibuffs&$FF=0
+;       LDA   Bpntrl            ; test for $00
+;       BNE   LAB_142P          ; not $00
+;       DEC   Bpntrh            ; allow for increment when $xx00
+; LAB_142P:
+;       .ENDIF
 ; *** end   patch for when Ibuffs is $xx00 - Daryl Rictor ***
 ; end of patch
       DEC   Bpntrl            ; allow for increment
@@ -1346,7 +1326,7 @@ LAB_1609:
 ; key press is detected.
 
 LAB_1629:
-      JMP   (VEC_CC)          ; ctrl c check vector
+      JMP   (ccvecl)          ; ctrl c check vector
 
 ; if there was a key press it gets back here ..
 
@@ -7607,32 +7587,9 @@ LAB_TWOPI:
       LDY   #>LAB_2C7C        ; set (2*pi) pointer high byte
       JMP   LAB_UFAC          ; unpack memory (AY) into FAC1 and return
 
-; system dependant i/o vectors
-; these are in RAM and are set by the monitor at start-up
-
-V_INPT:
-      JMP   (VEC_IN)          ; non halting scan input device
-V_OUTP:
-      JMP   (VEC_OUT)         ; send byte to output device
-V_LOAD:
-      JMP   (VEC_LD)          ; load BASIC program
-V_SAVE:
-      JMP   (VEC_SV)          ; save BASIC program
-
 ; The rest are tables messages and code for RAM
 
 ; the rest of the code is tables and BASIC start-up code
-
-PG2_TABS:
-      .byte $00               ; ctrl-c flag           -     $00 = enabled
-      .byte $00               ; ctrl-c byte           -     GET needs this
-      .byte $00               ; ctrl-c byte timeout   -     GET needs this
-      .word CTRLC             ; ctrl c check vector
-;     .word xxxx              ; non halting key input -     monitor to set this
-;     .word xxxx              ; output vector         -     monitor to set this
-;     .word xxxx              ; load vector           -     monitor to set this
-;     .word xxxx              ; save vector           -     monitor to set this
-PG2_TABE:
 
 ; character get subroutine for zero page
 
@@ -7677,16 +7634,18 @@ LAB_2CF4:
 LAB_2D05:
       RTS
 
-; page zero initialisation table $40-$52 inclusive
+; page zero initialisation table $00-$12 inclusive
 
 StrTab:
       .byte $4C               ; JMP opcode
       .word LAB_COLD          ; initial warm start vector (cold start)
 
-      .byte $00               ; these bytes are not used by BASIC
-      .word $0000             ;
-      .word $0000             ;
-      .word $0000             ;
+      .byte $00               ; ctrl-c flag           -     $00 = enabled
+      .byte $00               ; ctrl-c byte           -     GET needs this
+      .byte $00               ; ctrl-c byte timeout   -     GET needs this
+      .word CTRLC             ; ctrl c check vector
+
+      .word $0000             ; these bytes are not used by BASIC
 
       .byte $4C               ; JMP opcode
       .word LAB_FCER          ; initial user function vector ("Function call" error)

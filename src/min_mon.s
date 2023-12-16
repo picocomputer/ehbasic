@@ -1,8 +1,12 @@
 .include "rp6502.inc"
 .include "zp.inc"
 
-.import LAB_COLD, VEC_IN
+; void min_mon(void);
+
 .export _min_mon
+.export V_INPT, V_OUTP, V_LOAD, V_SAVE
+
+.import LAB_COLD, VEC_IN
 
 ; Instead of "6502 EhBASIC [C]old/[W]arm ?"
 ; Use CTRL-ALT-DEL then RESET for warm start.
@@ -15,37 +19,19 @@ _min_mon:
 
 AutoCold:
       LDA   #$38              ; SEC
-      STA   _min_mon
+      STA   _min_mon          ; self-modify
 
-; Setup vectors for a cold start
-
-      LDA   #<IRQ_CODE
+      LDA   #<IRQ_CODE        ; Setup 6502 IRQ Vector
       STA   $FFFE
       LDA   #>IRQ_CODE
       STA   $FFFF
 
-      LDA   #<NMI_CODE
+      LDA   #<NMI_CODE        ; Setup 6502 NMI vector
       STA   $FFFA
       LDA   #>NMI_CODE
       STA   $FFFB
 
-      LDY   #END_CODE-LAB_vec ; set index/count
-VecCopy:
-      LDA   LAB_vec-1,Y       ; get byte from vector table
-      STA   VEC_IN-1,Y        ; save to zero page RAM
-      DEY                     ; decrement index/count
-      BNE   VecCopy           ; loop if more to do
-
       JMP   LAB_COLD          ; do EhBASIC cold start
-
-; vector table
-
-LAB_vec:
-      .word ACIAin            ; byte in from simulated ACIA
-      .word ACIAout           ; byte out to simulated ACIA
-      .word no_load           ; null load vector for EhBASIC
-      .word no_save           ; null save vector for EhBASIC
-END_CODE:
 
 ; EhBASIC IRQ support
 
@@ -71,16 +57,16 @@ NMI_CODE:
 
 ; byte out to simulated ACIA
 
-ACIAout:
+V_OUTP:
       BIT   RIA_READY
-      BPL   ACIAout           ; wait for FIFO
+      BPL   V_OUTP            ; wait for FIFO
 
       STA   RIA_TX            ; save byte to simulated ACIA
       RTS
 
 ; byte in from simulated ACIA
 
-ACIAin:
+V_INPT:
 
       BIT   RIA_READY
       BVC   LAB_nobyw         ; branch if no byte waiting
@@ -91,6 +77,6 @@ ACIAin:
 
 LAB_nobyw:
       CLC                     ; flag no byte received
-no_load:                      ; empty load vector for EhBASIC
-no_save:                      ; empty save vector for EhBASIC
+V_LOAD:                       ; empty load vector for EhBASIC
+V_SAVE:                       ; empty save vector for EhBASIC
       RTS

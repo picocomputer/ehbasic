@@ -4,11 +4,11 @@
 LAB_WARM          = $00       ; BASIC warm start entry point
 Wrmjpl            = LAB_WARM+1; BASIC warm start vector jump low byte
 Wrmjph            = LAB_WARM+2; BASIC warm start vector jump high byte
-;                 = $03       ; unused
-;                 = $04       ; unused
-;                 = $05       ; unused
-;                 = $06       ; unused
-;                 = $07       ; unused
+ccflag            = $03       ; BASIC CTRL-C flag, 00 = enabled, 01 = dis
+ccbyte            = $04       ; BASIC CTRL-C byte
+ccnull            = $05       ; BASIC CTRL-C byte timeout
+ccvecl            = $06       ; ctrl c check vector low byte
+ccvech            = ccvecl+1  ; ctrl c check vector high byte
 ;                 = $08       ; unused
 ;                 = $09       ; unused
 Usrjmp            = $0A       ; USR function JMP address
@@ -27,7 +27,7 @@ nums_2            = nums_1+1  ; number to bin/hex string convert
 nums_3            = nums_1+2  ; number to bin/hex string convert LSB
 
 ;                 = $14       ; Start of cc65 registers
-;                 = $5A       ; End of cc65 registers
+;                 = $5A       ; Last of cc65 registers
 
 Srchc             = $5B       ; search character
 Temp3             = Srchc     ; temp byte used in number routines
