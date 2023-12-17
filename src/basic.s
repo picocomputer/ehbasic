@@ -4,7 +4,7 @@
 .export _LAB_1B5B_CALL1, _LAB_1B5B_CALL2
 
 .import V_INPT, V_OUTP, V_LOAD, V_SAVE
-.import __RAM_START__, __RAM_SIZE__, __STACKSIZE__, __IBUFFSIZE__
+.import __HEADER_START__, __RAM_START__, __RAM_SIZE__, __STACKSIZE__, __IBUFFSIZE__
 
 ; token values needed for BASIC
 
@@ -142,14 +142,12 @@ LAB_SKFF          = LAB_STAK+$FF
 Ibuffs            = __RAM_START__ + __RAM_SIZE__ + __STACKSIZE__;
 Ibuffe            = Ibuffs + __IBUFFSIZE__;
 
-Ram_base          = $0200         ; start of user RAM (set as needed, should be page aligned)
-Ram_top           = __RAM_START__ ; end of user RAM+1 (set as needed, should be page aligned)
+Ram_base          = $0200            ; start of user RAM (page aligned)
+Ram_top           = __HEADER_START__ ; end of user RAM+1 (page aligned)
 
 Stack_floor       = 16        ; bytes left free on stack for background interrupts
 
 ; BASIC cold start entry point
-
-; new page 2 initialisation, copy block to ccflag on
 
 LAB_COLD:
       LDX   #$FF              ; set byte

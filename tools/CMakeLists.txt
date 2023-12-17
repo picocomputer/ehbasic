@@ -10,30 +10,42 @@
 # Packages an executable target called ``<name>`` in RP6502 ROM format.
 # ``START <addr>`` defaults to 0x200.
 # ``RESET <addr>`` defaults to 0x200.
+# ``IRQ <addr>`` no default.
+# ``NMI <addr>`` no default.
 #
 function(rp6502_executable name)
     # Parse args
     set(start_addr "0x200")
     set(reset_addr "0x200")
+    set(irq_addr "none")
+    set(nmi_addr "none")
     set(extra_roms)
     foreach(X IN LISTS ARGN)
         if (NOT start_addr)
             set(start_addr ${X})
         elseif (NOT reset_addr)
             set(reset_addr ${X})
+        elseif (NOT irq_addr)
+            set(irq_addr ${X})
+        elseif (NOT nmi_addr)
+            set(nmi_addr ${X})
         elseif (X STREQUAL "START")
             set(start_addr FALSE)
         elseif (X STREQUAL "RESET")
             set(reset_addr FALSE)
+        elseif (X STREQUAL "IRQ")
+            set(irq_addr FALSE)
+        elseif (X STREQUAL "NMI")
+            set(nmi_addr FALSE)
         else ()
             list(APPEND extra_roms ${X})
-        endif()
+        endif ()
     endforeach()
     if (NOT start_addr)
         message (FATAL_ERROR "rp6502_executable START address missing")
     elseif (NOT reset_addr)
         message (FATAL_ERROR "rp6502_executable RESET address missing")
-    endif()
+    endif ()
     # Remove old ROM
     add_custom_command(TARGET ${name} PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E remove
@@ -41,13 +53,27 @@ function(rp6502_executable name)
     )
     # Create new ROM
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(tool_command "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/rp6502.py"
+        -a "${start_addr}" -r "${reset_addr}"
+    )
+    if (NOT irq_addr STREQUAL "none")
+        list(APPEND tool_command
+            -i "${irq_addr}"
+        )
+    endif ()
+    if (NOT nmi_addr STREQUAL "none")
+        list(APPEND tool_command
+            -n "${nmi_addr}"
+        )
+    endif ()
+    list(APPEND tool_command
+        -o "${CMAKE_CURRENT_BINARY_DIR}/${name}.rp6502"
+        create "${CMAKE_CURRENT_BINARY_DIR}/${name}"
+        -- ${extra_roms}
+    )
     add_custom_command(TARGET ${name} POST_BUILD
-        COMMAND "${Python3_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/tools/rp6502.py"
-            -a "${start_addr}" -r "${reset_addr}"
-            -o "${CMAKE_CURRENT_BINARY_DIR}/${name}.rp6502"
-            create "${CMAKE_CURRENT_BINARY_DIR}/${name}"
-            -- ${extra_roms}
+        COMMAND ${tool_command}
         DEPENDS ${name})
 endfunction()
 
