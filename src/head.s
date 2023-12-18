@@ -1,9 +1,8 @@
-.include "rp6502.inc"
-.include "zp.inc"
-
 ; Memory size in basic.cfg must match this HEAD segment exactly.
 ; This HEAD segment is always in a known location to allow for
 ; setting the vectors with rp6502_executable in CMakeLists.txt.
+
+.importzp IrqBase, NmiBase
 
 .segment "HEAD"
 

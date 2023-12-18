@@ -1,8 +1,7 @@
-.include "rp6502.inc"
-.include "zp.inc"
-
 ; This performs a minimal set of functions the EhBASIC user
 ; would traditionally provide from a monitor ROM at $FF00.
+
+.include "rp6502.inc"
 
 .export V_INPT, V_OUTP, V_LOAD, V_SAVE
 

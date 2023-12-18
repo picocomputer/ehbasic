@@ -1,15 +1,13 @@
-.include "rp6502.inc"
-.include "zp.inc"
-
-; void main(void); // for RP6502
-
-.export _main
-
-.import LAB_COLD
-
 ; Instead of "6502 EhBASIC [C]old/[W]arm ?"
 ; Use CTRL-ALT-DEL then RESET for warm start.
 ; Load the virtual ROM again for a cold start.
+
+; void main(void);
+
+.export _main
+
+.importzp LAB_WARM
+.import LAB_COLD
 
 .proc _main
       CLC                     ; Modifies to SEC after first run
