@@ -1,7 +1,6 @@
 .include "zp.inc"
 
 .export LAB_COLD
-.export _LAB_1B5B_CALL1, _LAB_1B5B_CALL2
 
 .import V_INPT, V_OUTP, V_LOAD, V_SAVE
 .import __HEADER_START__, __RAM_START__, __RAM_SIZE__, __STACKSIZE__, __IBUFFSIZE__
@@ -1226,14 +1225,6 @@ LAB_15B3:
                               ; here (+/-1) is then compared to that result and if they
                               ; are the same (+ve and FOR > TO or -ve and FOR < TO) then
                               ; the loop is done
-
-; *** begin patch  2.22p5.3   potential return address -$100 (page not incremented) ***
-; *** add
-;    .IF (* & $FF) = $FD
-;       NOP                     ; return address of JSR +1 (on  next page)
-;    .ENDIF
-; *** end   patch  2.22p5.3   potential return address -$100 (page not incremented) ***
-_LAB_1B5B_CALL1:
       JSR   LAB_1B5B          ; push sign, round FAC1 and put on stack
       LDA   Frnxth            ; get var pointer for FOR/NEXT high byte
       PHA                     ; push on stack
@@ -2782,13 +2773,6 @@ LAB_1B43:
       LDA   LAB_OPPT+1,Y      ; get function vector low byte
       PHA                     ; onto stack
                               ; now push sign, round FAC1 and put on stack
-; *** begin patch  2.22p5.3   potential return address -$100 (page not incremented) ***
-; *** add
-;    .IF (* & $FF) = $FD
-;       NOP                     ; return address of JSR +1 (on  next page)
-;    .ENDIF
-; *** end   patch  2.22p5.3   potential return address -$100 (page not incremented) ***
-_LAB_1B5B_CALL2:
       JSR   LAB_1B5B          ; function will return here, then the next RTS will call
                               ; the function
       LDA   comp_f            ; get compare function flag
@@ -2803,12 +2787,11 @@ LAB_1B53:
 
 LAB_1B5B:
       PLA                     ; get return addr low byte
+      CLC                     ; clear carry
+      ADC   #$01              ; increment it (was ret-1 pushed? yes!)
       STA   ut1_pl            ; save it
-      INC   ut1_pl            ; increment it (was ret-1 pushed? yes!)
-                              ; note! no check is made on the high byte! if the calling
-                              ; routine assembles to a page edge then this all goes
-                              ; horribly wrong !!!
       PLA                     ; get return addr high byte
+      ADC   #$00              ; add carry bit only
       STA   ut1_ph            ; save it
       LDA   FAC1_s            ; get FAC1 sign (b7)
       PHA                     ; push sign

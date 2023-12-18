@@ -14,6 +14,7 @@ rp6502_executable(basic
 )
 target_sources(basic PRIVATE
     src/basic.s
-    src/main.c
+    src/head.s
+    src/main.s
     src/min_mon.s
 )
