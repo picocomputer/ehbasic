@@ -17,4 +17,5 @@ target_sources(basic PRIVATE
     src/head.s
     src/main.s
     src/min_mon.s
+    src/usr.s
 )

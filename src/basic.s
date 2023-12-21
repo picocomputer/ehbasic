@@ -48,9 +48,9 @@
 ; p6.2  removed use of page 2; moved cc* to zp, moved Ibuff to cc65 memory.
 
 .exportzp LAB_WARM, IrqBase, NmiBase
-.export LAB_COLD
+.export LAB_COLD, LAB_FCER
 
-.import V_INPT, V_OUTP, V_LOAD, V_SAVE
+.import V_INPT, V_OUTP, V_LOAD, V_SAVE, V_USR
 .import __HEADER_START__, __RAM_START__, __RAM_SIZE__, __STACKSIZE__, __IBUFFSIZE__
 
 ; zero page use ..
@@ -7957,7 +7957,7 @@ StrTab:
       .word $0000             ; these bytes are not used by BASIC
 
       .byte $4C               ; JMP opcode
-      .word LAB_FCER          ; initial user function vector ("Function call" error)
+      .word V_USR             ; initial user function vector ("Function call" error)
       .byte $00               ; default NULL count
       .byte $00               ; clear terminal position
       .byte $00               ; default terminal width byte
