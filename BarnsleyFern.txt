@@ -1,0 +1,54 @@
+ 10 REM BARNSLEY FERN
+ 15 REM FROM: ROSETTA CODE WEBSITE 
+ 20 REM Conversion from Applesoft BASIC to EHBASIC on RP6502
+ 25 REM Applesoft screen is 280h x 192v
+ 30 REM Our early rev rpg6502 EhBASIC screen is 320h x 180v 
+ 
+ 50 REM Addresses for our four new functions from mapfile:
+ 55 LET      HGR = $E8B2  : REM F_HGR->init_bitmap_graphics()
+ 60 LET    HPLOT = $E8B6  : REM F_HPLOT->draw_pixel()
+ 65 LET TEXTMODE = $E8F2  : REM F_TEXT->init_console_text()
+ 70 LET     HOME = $E8F6  : REM F_CLS->cls()
+ 75 LET      CLS = HOME   : REM cls()
+ 82 LET    GREEN = 10     : REM Green ON EHBASIC HPLOT 
+
+100  LET YY(1) = 0.16
+110  XX(2) =    0.85 : XY(2) = 0.04
+120  YX(2) =   -0.04 : YY(2) = 0.85
+130  LET Y(2) = 1.6
+140  XX(3) = 0.20 : XY(3) =  -0.26
+150  YX(3) = 0.23 : YY(3) =   0.22
+160  LET Y(3) = 1.6
+170  XX(4) =  -0.15 : XY(4) = 0.28
+180  YX(4) =   0.26 : YY(4) = 0.24
+190  LET Y(4) = 0.44
+200  REM HGR :I =  PEEK (49234) : REM Applesoft HI-RES GRAPHICS NO TEXT
+202  CALL HGR : REM EhBASIC 
+210  REM HCOLOR= 1 : REM GREEN ON APPLE-II 
+220  LET X = 0    : Y = 0
+225  LET Xint = 0 : Yint = 0 : REM Applesoft has integer vars X% and Y% 
+230  FOR I = 1 TO 100000
+240  REM R =  INT(RND(1) * 100) : REM Applesoft
+242      R =  INT(RND(0) * 100) : REM EhBASIC
+250  REM F = (R < 7) + (R < 14) + 2 : REM in Applesoft true == 1
+251      F = 0-(R<7) - (R < 14) + 2 : REM in EhBASIC   true ==-1 
+260  REM F = F - (R = 99) : REM Applesoft
+261      F = F + (R = 99) : REM EhBASIC
+270      X = XX(F) * X + XY(F) * Y
+280      Y = YX(F) * X + YY(F) * Y
+290      Y = Y + Y(F)
+
+300 REM  X%   =  62 + X * 27.9           : REM Original Applesoft
+302      Xint = INT(  62 + (X * 27.9) )
+304 REM  Xint = INT(  70 + (X * 31.9) )
+
+320 REM  Y%   = 192 - Y * 19.1           : REM Original Applesoft
+322 REM  Yint = INT( 192 - (Y * 19.1) )
+324      Yint = INT( 180 - (Y * 17.9) )
+
+330      REM  HPLOT X% * 2 + 1,Y%          : REM Applesoft
+333      IF Xint > 127 THEN LET Xint = 127 : REM Ensure HPLOT's x var is < 255
+335      CALL HPLOT,(Xint*2),  Yint, GREEN : REM RP6502 EhBASIC  
+340  NEXT
+
+
