@@ -1,14 +1,15 @@
   1 REM Mandelbrot ported from Applesoft BASIC. Ref: Rosettacode.org
   2 REM Addresses for our four new functions from mapfile:
   3 LET      HGR = $E8B2  : REM F_HGR->init_bitmap_graphics()
-  4 LET    HPLOT = $E8B6  : REM F_HPLOT->draw_pixel()
-  5 LET TEXTMODE = $E8F2  : REM F_TEXT->init_console_text()
-  6 LET     HOME = $E8F6  : REM F_CLS->cls()
+  4 LET    HPLOT = $E8BA : REM F_HPLOT->draw_pixel()
+  5 LET TEXTMODE = $E8F6  : REM F_TEXT->init_console_text()
+  6 LET     HOME = $E8FA  : REM F_CLS->cls()
   7 LET      CLS = HOME   : REM cls()
   8 LET    WHITE = 15     : REM white ON EHBASIC HPLOT. 
   9 REM EhBasic Colorrange 8(grey) 9(red) - 14(cyan) 15(wht); A2 ran 0(blk) - 7(wht2)
 
-10  CALL HGR
+10  REM call HGR with $FF for 320x240x4bpp(4:3); $00 for 320x180x8bpp(16:9) 
+11  CALL HGR,$FF
 20  XC = -0.5           : REM CENTER COORD X
 30  YC = 0              : REM   "      "   Y
 40  S = 2               : REM SCALE
@@ -23,7 +24,8 @@
 120 YM = YR / 191       : REM    "      "     "  Y
 130 FOR YI = 0 TO 3     : REM INTERLEAVE
 140   REM FOR YS = 0+YI TO 188+YI STEP 4 : REM Y SCREEN COORDINATE
-141   FOR YS = 0+YI TO 176+YI STEP 4 : REM EhBASIC y-limit hack
+141   REM FOR YS = 0+YI TO 176+YI STEP 4 : REM EhBASIC y-limit hack $00
+142   FOR YS = 0+YI TO 236+YI STEP 4 : REM EhBASIC y-limit hack $FF
 
 143   REM HCOLOR=3 : REM HPLOT 0,YS TO 279,YS : REM On A2: Clear-to-white 1st
 144   REM On pico6502, unnecessary to 1st clear each line to white

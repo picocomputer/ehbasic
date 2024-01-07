@@ -14,7 +14,7 @@
 
 ;
 ; The following imports from ca65 libraries were difficult to find 
-; but proofed to be key in integrating EnBasci-assembly -> C calling parameters.  
+; but proved to be key in integrating EnBasci-assembly -> C calling parameters.  
 ; This greatly aided parameter/stack prep in using the added EhBasic 'CALL' command 
 ; parameters 'HPLOT,x,y,color' prior to call the c-function _plot_pixel().
 ; 
@@ -31,11 +31,15 @@ AA_begin_enhancements:
 ;       the EhBASIC-interpreter executable code.
 ;       For now, they will be CALL'ed via BASIC's 'CALL' command.
 ; 
-F_HGR:
+F_HGR:      ; HGR now has 1-parameter: dimension-flag 0x00=320x180x8bpp 0xFF=320x240x4bpp
+      JSR   LAB_SCGB        ; scan for "," then get dimension byte in x-reg. 
+                            ; Else syntax-error, warm start.
+      txa                   ; Transfer x-reg to a-reg, our screen-dimension-flag byte
+                            ; before doing our c-call to:
       jmp _init_bitmap_graphics
       rts ; for safety
 
-F_HPLOT:
+F_HPLOT:                    ; HPLOT has 3-parameters: x, y, color 
       JSR   LAB_SCGB        ; scan for "," and get byte. Else syntax-error, warm start.
       STX   PLOT_XBYT       ; save plot x
       JSR   LAB_SCGB        ; scan for "," and get byte

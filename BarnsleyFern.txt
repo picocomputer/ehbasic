@@ -6,9 +6,9 @@
  
  50 REM Addresses for our four new functions from mapfile:
  55 LET      HGR = $E8B2  : REM F_HGR->init_bitmap_graphics()
- 60 LET    HPLOT = $E8B6  : REM F_HPLOT->draw_pixel()
- 65 LET TEXTMODE = $E8F2  : REM F_TEXT->init_console_text()
- 70 LET     HOME = $E8F6  : REM F_CLS->cls()
+ 60 LET    HPLOT = $E8BA  : REM F_HPLOT->draw_pixel()
+ 65 LET TEXTMODE = $E8F6  : REM F_TEXT->init_console_text()
+ 70 LET     HOME = $E8FA  : REM F_CLS->cls()
  75 LET      CLS = HOME   : REM cls()
  82 LET    GREEN = 10     : REM Green ON EHBASIC HPLOT 
 
@@ -23,7 +23,7 @@
 180  YX(4) =   0.26 : YY(4) = 0.24
 190  LET Y(4) = 0.44
 200  REM HGR :I =  PEEK (49234) : REM Applesoft HI-RES GRAPHICS NO TEXT
-202  CALL HGR : REM EhBASIC 
+202  CALL HGR,$FF : REM EhBASIC $FF means 320H x 240V x 4bpp
 210  REM HCOLOR= 1 : REM GREEN ON APPLE-II 
 220  LET X = 0    : Y = 0
 225  LET Xint = 0 : Yint = 0 : REM Applesoft has integer vars X% and Y% 
@@ -44,7 +44,8 @@
 
 320 REM  Y%   = 192 - Y * 19.1           : REM Original Applesoft
 322 REM  Yint = INT( 192 - (Y * 19.1) )
-324      Yint = INT( 180 - (Y * 17.9) )
+324 REM  Yint = INT( 180 - (Y * 17.9) ) : REM use for EhBASIC 320Hx180V mode
+325      Yint = INT( 240 - (Y * 23.9) ) : REM use for EhBASIC 320Hx240V mode
 
 330      REM  HPLOT X% * 2 + 1,Y%          : REM Applesoft
 333      IF Xint > 127 THEN LET Xint = 127 : REM Ensure HPLOT's x var is < 255
