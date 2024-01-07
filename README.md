@@ -19,16 +19,19 @@ picocomputer repo (rev: 63ca0e6).
 Four new commands are available using EhBasic's "CALL" keyword. 
 CALL addresses supplied are from the mapfile. 
 Plotting command is callable from EhBASIC.
+New: two screen dimensions are supported.
 
 The commands are:
 
-    * HGR - initializes the 320h x 180v x 8-bpp mode.
+    * HGR,screen_dimension - initializes graphics screen mode
+       * CALL HGR,0   - selects 320h x 180v x 8bpp mode (16:9 letterbox);
+       * CALL HGR,$FF - selects 320h x 240v x 4bpp mode (4:3 fullscreen)
     * HPLOT,x,y,color - paint a pixel of 'color' at x,y on the screen.
     * TEXTMODE - return VGA-screen back to console/text mode
     * CLS (or HOME) - clear the console/text screen.
 
 Assumptions / Limitations:
 
-    * HPLOT targets (only) the 320h x 180v x 8-bit-color mode of the rp6502's pico-VGA.
+    * HPLOT targets (only) the two screen-modes listed above on the rp6502's pico-VGA.
     * The x-coordinate from EhBasic is limited to values >= 255 (8-bits). This is a 
       limitation of parameters following the 'CALL' EhBASIC keyword.
