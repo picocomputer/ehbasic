@@ -4,15 +4,19 @@
 .include "rp6502.inc"
 
 .export V_INPT, V_OUTP, V_LOAD, V_SAVE
-.import LAB_14BD, LAB_EVEX, LAB_XERR, LAB_22B6
-.importzp Dtypef, tmp1, tmp2
+.import LAB_14BD, LAB_EVEX, LAB_SNER, LAB_22B6
+.importzp Dtypef, ptr1
+
+.data
 
 fd_out:
       .byte $FF               ; output file descriptor, or negative for ACIA
 
+.code
+
 V_OUTP:                       ; byte out to simulated ACIA
       BIT   fd_out            ; check for fwrite fd
-      BPL   fwrite            ; use fwrite handler
+      BPL   write             ; use fwrite handler
 V_OUTP_wait:
       BIT   RIA_READY         ; check ready bit
       BPL   V_OUTP_wait       ; wait for FIFO
@@ -33,55 +37,53 @@ V_LOAD:                       ; empty load vector for EhBASIC
       RTS
 
 V_SAVE:
-      LDA #$32                ; O_TRUNC | O_CREAT | O_WRONLY
-      JSR open
-      STA fd_out
-
-      JSR LAB_14BD            ; LIST
-
-      LDA #$FF
-      STA fd_out
-
-      LDA #RIA_OP_CLOSE
-      STA RIA_OP
-      JMP RIA_SPIN            ; TODO check for errors
+      LDA   #$32              ; O_TRUNC | O_CREAT | O_WRONLY
+      JSR   open
+      BMI   syntax_error      ; TODO file error instead of syntax
+      STA   fd_out            ; redirect V_OUTP to fd
+      JSR   LAB_14BD          ; LIST
+      LDA   fd_out
+      STA   RIA_A             ; to be used by close()
+      LDA   #$FF
+      STA   fd_out            ; restore V_OUTP to ACIA
+      LDA   #RIA_OP_CLOSE
+      STA   RIA_OP            ; int close(int fildes)
+      JSR   RIA_SPIN
+      BMI   syntax_error      ; TODO file error instead of syntax
+      RTS
 
 open:
-      STA RIA_A
-      JSR LAB_EVEX
-      LDA Dtypef              ; data type flag, $FF=string, $00=numeric
-	beq syntax_error
-      JSR	LAB_22B6          ; pop string off descriptor stack, or from top of string
-                              ; space returns with A = length, X=pointer low byte,
-                              ; Y=pointer high byte
-      beq syntax_error
+      STA   RIA_A             ; file open options
+      JSR   LAB_EVEX          ; evaluate expression
+      LDA   Dtypef            ; data type flag, $FF=string, $00=numeric
+      BEQ   syntax_error      ; syntax error if not string
+      JSR   LAB_22B6          ; obtain string
+      STX   ptr1              ; pointer low byte
+      STY   ptr1+1            ; pointer high byte
+      TAY                     ; length
+      BEQ   syntax_error      ; syntax error if  empty string
 
-      STX tmp1
-      STY tmp2
-      TAY
-
-open_filename_copy:
+push_filename:
       DEY
-      LDA (tmp1), Y
-      STA RIA_XSTACK
+      LDA   (ptr1), Y
+      STA   RIA_XSTACK
       TYA
-      BNE open_filename_copy
+      BNE   push_filename
 
-      LDA #RIA_OP_OPEN
-      STA RIA_OP
-      JMP RIA_SPIN            ; TODO check for errors
-
-fwrite:
-      STA RIA_XSTACK
-      LDA fd_out
-      STA RIA_A
-      LDA #RIA_OP_WRITE_XSTACK
-      STA RIA_OP
-fwrite_wait:
-      BIT RIA_BUSY
-      BMI fwrite_wait
-      RTS                     ; TODO check for errors
+      LDA   #RIA_OP_OPEN
+      STA   RIA_OP            ; int open(const char *path, int oflag)
+      JMP   RIA_SPIN
 
 syntax_error:
-      ldx #$02                ; syntax error
-      jmp LAB_XERR
+      jmp   LAB_SNER          ; far jump
+
+write:
+      STA   RIA_XSTACK
+      LDA   fd_out
+      STA   RIA_A
+      LDA   #RIA_OP_WRITE_XSTACK
+      STA   RIA_OP            ; int write_xstack(const void *buf, unsigned count, int fildes)
+write_busy:
+      BIT   RIA_BUSY
+      BMI   write_busy
+      RTS                     ; TODO check for errors
