@@ -4,26 +4,21 @@
 .include "rp6502.inc"
 
 .export V_INPT, V_OUTP, V_LOAD, V_SAVE
-.import LAB_14BD, LAB_EVEX, LAB_SNER, LAB_22B6
-.importzp Dtypef, ptr1
+.import LAB_14BD, LAB_EVEX, LAB_SNER, LAB_22B6, LAB_1463
+.importzp Dtypef, ptr1, tmp1
 
 .data
 
+fd_in:
+      .byte $FF               ; input file descriptor, or negative for ACIA
 fd_out:
       .byte $FF               ; output file descriptor, or negative for ACIA
 
 .code
 
-V_OUTP:                       ; byte out to simulated ACIA
-      BIT   fd_out            ; check for fwrite fd
-      BPL   write             ; use fwrite handler
-V_OUTP_wait:
-      BIT   RIA_READY         ; check ready bit
-      BPL   V_OUTP_wait       ; wait for FIFO
-      STA   RIA_TX            ; save byte to simulated ACIA
-      RTS
-
 V_INPT:                       ; byte in from simulated ACIA
+      BIT   fd_in             ; check for read fd
+      BPL   read              ; use read() handler
       BIT   RIA_READY
       BVC   LAB_nobyw         ; branch if no byte waiting
       LDA   RIA_RX            ; get byte from simulated ACIA
@@ -33,8 +28,98 @@ LAB_nobyw:
       CLC                     ; flag no byte received
       RTS
 
-V_LOAD:                       ; empty load vector for EhBASIC
+read:
+      LDA   tmp1
+      BEQ   read_read
+      DEC   tmp1
+      LDA   #$0D
+      SEC
       RTS
+
+read_read:
+
+      LDA   #$01
+      STA   RIA_XSTACK
+      LDA   fd_in
+      STA   RIA_A
+      LDA   #RIA_OP_READ_XSTACK
+      STA   RIA_OP            ; int read_xstack(void *buf, unsigned count, int fildes)
+read_busy:
+      BIT   RIA_BUSY
+      BMI   read_busy
+      LDA   RIA_XSTACK
+      CMP   #$0A
+      BEQ   read_cr
+      CMP   #$00
+      BNE   read_done
+
+      LDA   fd_in
+      STA   RIA_A
+      LDA   #RIA_OP_CLOSE
+      STA   RIA_OP            ; int close(int fildes)
+read_close:
+      BIT   RIA_BUSY
+      BMI   read_close
+      LDA   #$FF
+      STA   fd_in             ; restore V_INPT to ACIA
+read_cr:
+      LDA   #$0D
+
+read_done:
+      SEC
+      RTS
+
+
+V_OUTP:                       ; byte out to simulated ACIA
+      BIT   fd_out            ; check for write fd
+      BPL   write             ; use write() handler
+V_OUTP_wait:
+      BIT   RIA_READY         ; check ready bit
+      BPL   V_OUTP_wait       ; wait for FIFO
+      STA   RIA_TX            ; save byte to simulated ACIA
+      RTS
+
+write:
+      CMP   #$0D              ; ASCII 13 CR
+      BEQ   write_skip        ; filter CR, saves are LF only
+      STA   RIA_XSTACK
+      LDA   fd_out
+      STA   RIA_A
+      LDA   #RIA_OP_WRITE_XSTACK
+      STA   RIA_OP            ; int write_xstack(const void *buf, unsigned count, int fildes)
+write_busy:
+      BIT   RIA_BUSY
+      BMI   write_busy
+write_skip:
+      RTS                     ; TODO check for errors
+
+
+V_LOAD:                       ; empty load vector for EhBASIC
+      LDA   #$01              ; O_RDONLY
+      JSR   open
+      BMI   syntax_error      ; TODO file error instead of syntax
+      STA   fd_in             ; redirect V_INPT from fd
+
+      TSX                     ; LAB_NEW clobbers stack, save the return
+      INX
+      LDA   $100,X
+      STA   ptr1
+      INX
+      LDA   $100,X
+      STA   ptr1+1
+
+      JSR   LAB_1463          ; LAB_NEW
+
+      LDA   ptr1+1            ; restore the return address
+      PHA
+      LDA   ptr1
+      PHA
+
+      LDA   #$03              ; preamble newlines
+      STA   tmp1
+
+      RTS
+
 
 V_SAVE:
       LDA   #$32              ; O_TRUNC | O_CREAT | O_WRONLY
@@ -51,6 +136,7 @@ V_SAVE:
       JSR   RIA_SPIN
       BMI   syntax_error      ; TODO file error instead of syntax
       RTS
+
 
 open:
       STA   RIA_A             ; file open options
@@ -76,17 +162,3 @@ push_filename:
 
 syntax_error:
       JMP   LAB_SNER          ; far jump
-
-write:
-      CMP   #$0D              ; ASCII 13 CR
-      BEQ   write_skip        ; filter CR, saves are LF only
-      STA   RIA_XSTACK
-      LDA   fd_out
-      STA   RIA_A
-      LDA   #RIA_OP_WRITE_XSTACK
-      STA   RIA_OP            ; int write_xstack(const void *buf, unsigned count, int fildes)
-write_busy:
-      BIT   RIA_BUSY
-      BMI   write_busy
-write_skip:
-      RTS                     ; TODO check for errors
