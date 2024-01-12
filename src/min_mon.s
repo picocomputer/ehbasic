@@ -27,7 +27,6 @@ V_INPT:                       ; byte in from simulated ACIA
 LAB_nobyw:
       CLC                     ; flag no byte received
       RTS
-
 read:
       LDA   tmp1
       BEQ   read_read
@@ -35,9 +34,7 @@ read:
       LDA   #$0D
       SEC
       RTS
-
 read_read:
-
       LDA   #$01
       STA   RIA_XSTACK
       LDA   fd_in
@@ -62,9 +59,9 @@ read_close:
       BMI   read_close
       LDA   #$FF
       STA   fd_in             ; restore V_INPT to ACIA
+      STA   fd_out            ; restore V_OUTP to ACIA
 read_cr:
       LDA   #$0D
-
 read_done:
       SEC
       RTS
@@ -78,8 +75,9 @@ V_OUTP_wait:
       BPL   V_OUTP_wait       ; wait for FIFO
       STA   RIA_TX            ; save byte to simulated ACIA
       RTS
-
 write:
+      BIT   fd_in             ; check for read fd
+      BPL   write_skip        ; dump load echos to null
       CMP   #$0D              ; ASCII 13 CR
       BEQ   write_skip        ; filter CR, saves are LF only
       STA   RIA_XSTACK
@@ -99,7 +97,7 @@ V_LOAD:                       ; empty load vector for EhBASIC
       JSR   open
       BMI   syntax_error      ; TODO file error instead of syntax
       STA   fd_in             ; redirect V_INPT from fd
-
+      STA   fd_out            ; redirect V_OUTP to null
       TSX                     ; LAB_NEW clobbers stack, save the return
       INX
       LDA   $100,X
@@ -107,17 +105,13 @@ V_LOAD:                       ; empty load vector for EhBASIC
       INX
       LDA   $100,X
       STA   ptr1+1
-
       JSR   LAB_1463          ; LAB_NEW
-
-      LDA   ptr1+1            ; restore the return address
+      LDA   ptr1+1            ; restore the return address clobbered by new
       PHA
       LDA   ptr1
       PHA
-
-      LDA   #$03              ; preamble newlines
+      LDA   #$01              ; preamble newlines
       STA   tmp1
-
       RTS
 
 
