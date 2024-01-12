@@ -4,7 +4,7 @@
 .include "rp6502.inc"
 
 .export V_INPT, V_OUTP, V_LOAD, V_SAVE
-.import LAB_14BD, LAB_EVEX, LAB_SNER, LAB_22B6, LAB_1463
+.import LAB_14BD, LAB_EVEX, LAB_SNER, LAB_22B6, LAB_1463, LAB_RMSG
 .importzp Dtypef, ptr1, tmp1
 
 .data
@@ -45,12 +45,11 @@ read_busy:
       BIT   RIA_BUSY
       BMI   read_busy
       LDA   RIA_XSTACK
-      CMP   #$0A
+      CMP   #$0A              ; LF and CRLF endings supported
       BEQ   read_cr
-      CMP   #$00
+      CMP   #$00              ; empty stack always returns 0
       BNE   read_done
-
-      LDA   fd_in
+      LDA   fd_in             ; eof
       STA   RIA_A
       LDA   #RIA_OP_CLOSE
       STA   RIA_OP            ; int close(int fildes)
@@ -60,6 +59,19 @@ read_close:
       LDA   #$FF
       STA   fd_in             ; restore V_INPT to ACIA
       STA   fd_out            ; restore V_OUTP to ACIA
+      PHY                     ; print "Ready"
+      LDA   #<(LAB_RMSG)
+      STA   ptr1
+      LDA   #>(LAB_RMSG)
+      STA   ptr1+1
+      LDY   #$00
+read_ready_loop:
+      LDA   (ptr1),y
+      JSR   V_OUTP_wait
+      INY
+      CPY   #$07
+      BMI   read_ready_loop
+      PLY
 read_cr:
       LDA   #$0D
 read_done:
@@ -87,9 +99,9 @@ write:
       STA   RIA_OP            ; int write_xstack(const void *buf, unsigned count, int fildes)
 write_busy:
       BIT   RIA_BUSY
-      BMI   write_busy
+      BMI   write_busy        ; TODO check for errors
 write_skip:
-      RTS                     ; TODO check for errors
+      RTS
 
 
 V_LOAD:                       ; empty load vector for EhBASIC
@@ -142,17 +154,16 @@ open:
       STY   ptr1+1            ; pointer high byte
       TAY                     ; length
       BEQ   syntax_error      ; syntax error if empty string
-
 push_filename:
       DEY
       LDA   (ptr1), Y
       STA   RIA_XSTACK
       TYA
       BNE   push_filename
-
       LDA   #RIA_OP_OPEN
       STA   RIA_OP            ; int open(const char *path, int oflag)
       JMP   RIA_SPIN
+
 
 syntax_error:
       JMP   LAB_SNER          ; far jump
