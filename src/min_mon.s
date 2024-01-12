@@ -41,7 +41,7 @@ V_SAVE:
       JSR   open
       BMI   syntax_error      ; TODO file error instead of syntax
       STA   fd_out            ; redirect V_OUTP to fd
-      JSR   LAB_14BD          ; LIST
+      JSR   LAB_14BD          ; LAB_LIST
       LDA   fd_out
       STA   RIA_A             ; to be used by close()
       LDA   #$FF
@@ -61,7 +61,7 @@ open:
       STX   ptr1              ; pointer low byte
       STY   ptr1+1            ; pointer high byte
       TAY                     ; length
-      BEQ   syntax_error      ; syntax error if  empty string
+      BEQ   syntax_error      ; syntax error if empty string
 
 push_filename:
       DEY
@@ -75,9 +75,11 @@ push_filename:
       JMP   RIA_SPIN
 
 syntax_error:
-      jmp   LAB_SNER          ; far jump
+      JMP   LAB_SNER          ; far jump
 
 write:
+      CMP   #$0D              ; ASCII 13 CR
+      BEQ   write_skip        ; filter CR, saves are LF only
       STA   RIA_XSTACK
       LDA   fd_out
       STA   RIA_A
@@ -86,4 +88,5 @@ write:
 write_busy:
       BIT   RIA_BUSY
       BMI   write_busy
+write_skip:
       RTS                     ; TODO check for errors
