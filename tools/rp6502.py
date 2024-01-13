@@ -178,15 +178,15 @@ class ROM:
             # Decode first line as cp850 because binary garbage can
             # raise here before our better message gets to the user.
             command = f.readline().decode("cp850")
-            if not re.match("^#![Rr][Pp]6502\n$", command):
+            if not re.match("^#![Rr][Pp]6502(\r|)\n$", command):
                 raise RuntimeError(f"Invalid RP6502 ROM file: {file}")
             while True:
-                command = f.readline().decode("ascii")
+                command = f.readline().decode("ascii").rstrip()
                 if len(command) == 0:
                     break
                 se = re.search("^ *(# )", command)
                 if se:
-                    self.add_help(command[se.start(1) + 2 :].rstrip())
+                    self.add_help(command[se.start(1) + 2 :])
                     continue
                 if re.search("^ *#$", command):
                     self.add_help("")
@@ -197,7 +197,7 @@ class ROM:
                     def str_to_address(str):
                         """Supports $FFFF number format."""
                         if str:
-                            str = re.sub("^\$", "0x", str)
+                            str = re.sub("^\\$", "0x", str)
                         if re.match("^(0x|)[0-9A-Fa-f]*$", str):
                             return eval(str)
                         else:
@@ -317,7 +317,7 @@ def exec_args():
     def str_to_address(parser, str, errmsg):
         """Supports $FFFF number format."""
         if str:
-            str = re.sub("^\$", "0x", str)
+            str = re.sub("^\\$", "0x", str)
             if re.match("^(0x|)[0-9A-Fa-f]*$", str):
                 return eval(str)
             else:
