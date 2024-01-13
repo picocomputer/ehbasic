@@ -20,11 +20,11 @@ V_INPT:                       ; byte in from simulated ACIA
       BIT   fd_in             ; check for read fd
       BPL   read              ; use read() handler
       BIT   RIA_READY
-      BVC   LAB_nobyw         ; branch if no byte waiting
+      BVC   acia_nobyw        ; branch if no byte waiting
       LDA   RIA_RX            ; get byte from simulated ACIA
       SEC                     ; flag byte received
       RTS
-LAB_nobyw:
+acia_nobyw:
       CLC                     ; flag no byte received
       RTS
 read:
@@ -69,7 +69,7 @@ read_ready_loop:
       LDA   (ptr1),y
       JSR   V_OUTP_wait
       INY
-      CPY   #$07
+      CPY   #$07              ; only print first part of ready string
       BMI   read_ready_loop
       PLY
 read_cr:
@@ -104,7 +104,7 @@ write_skip:
       RTS
 
 
-V_LOAD:                       ; empty load vector for EhBASIC
+V_LOAD:                       ; load vector for EhBASIC
       LDA   #$01              ; O_RDONLY
       JSR   open
       BMI   syntax_error      ; TODO file error instead of syntax
@@ -127,7 +127,7 @@ V_LOAD:                       ; empty load vector for EhBASIC
       RTS
 
 
-V_SAVE:
+V_SAVE:                       ; save vector for EhBASIC
       LDA   #$32              ; O_TRUNC | O_CREAT | O_WRONLY
       JSR   open
       BMI   syntax_error      ; TODO file error instead of syntax
