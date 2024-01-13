@@ -992,15 +992,19 @@ LAB_INLN:
 
                               ; $08 as delete key (BACKSPACE on standard keyboard)
 LAB_134B:
+      TXA
+      BEQ   LAB_134B_end      ; skip if start of input
+      DEX                     ; decrement the buffer counter (delete)
+      LDA   #$08
       JSR   V_OUTP            ; back over the character
       LDA   #$20
       JSR   V_OUTP            ; erase the character
       LDA   #$08
-      JSR   LAB_PRNA          ; go print the character
-      TXA
-      BEQ   LAB_134B_sol      ; unless at the start of line
-      DEX                     ; decrement the buffer counter (delete)
-LAB_134B_sol:
+      JSR   V_OUTP            ; go back again
+      LDA   TPos
+      BEQ   LAB_134B_end      ; unless at the start of line
+      DEC   TPos              ; move the tab position
+LAB_134B_end:
       .byte $2C               ; make LDX into BIT abs
 
 ; call for BASIC input (main entry point)
@@ -1029,11 +1033,8 @@ LAB_1359:
 
 LAB_1374:
       CMP   #$7F              ; compare with [BACKSPACE] (delete last character)
-      BNE   LAB_1376
-      LDA   #$08
-      BRA   LAB_134B          ; go delete last character
+      BEQ   LAB_134B          ; go delete last character
 
-LAB_1376:
       CMP   #$20              ; compare with [SP]
       BCC   LAB_1359          ; if < ignore character
 
@@ -2584,7 +2585,7 @@ LAB_18E3:
 ; note! some routines expect this one to exit with Zb=0
 
 LAB_PRNA:
-      CMP   #' '              ; compare with " "
+      CMP   #$20              ; compare with " "
       BCC   LAB_18F9          ; branch if less (non printing)
 
                               ; else printable character
