@@ -18,4 +18,6 @@ target_sources(basic PRIVATE
     src/main.s
     src/min_mon.s
     src/usr.s
+    src/rp6502enhance.s
+    src/basgraf.c
 )
