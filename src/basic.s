@@ -997,7 +997,10 @@ LAB_134B:
       JSR   V_OUTP            ; erase the character
       LDA   #$08
       JSR   LAB_PRNA          ; go print the character
+      TXA
+      BEQ   LAB_134B_sol      ; unless at the start of line
       DEX                     ; decrement the buffer counter (delete)
+LAB_134B_sol:
       .byte $2C               ; make LDX into BIT abs
 
 ; call for BASIC input (main entry point)
