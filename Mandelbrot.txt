@@ -1,9 +1,9 @@
   1 REM Mandelbrot ported from Applesoft BASIC. Ref: Rosettacode.org
   2 REM Addresses for our four new functions from mapfile:
-  3 LET      HGR = $E8B2  : REM F_HGR->init_bitmap_graphics()
-  4 LET    HPLOT = $E8BA : REM F_HPLOT->draw_pixel()
-  5 LET TEXTMODE = $E8F6  : REM F_TEXT->init_console_text()
-  6 LET     HOME = $E8FA  : REM F_CLS->cls()
+  3 LET      HGR = $E9A8  : REM F_HGR->init_bitmap_graphics()
+  4 LET    HPLOT = $E9B0 : REM F_HPLOT->draw_pixel()
+  5 LET TEXTMODE = $E9EC  : REM F_TEXT->init_console_text()
+  6 LET     HOME = $E9F0  : REM F_CLS->cls()
   7 LET      CLS = HOME   : REM cls()
   8 LET    WHITE = 15     : REM white ON EHBASIC HPLOT. 
   9 REM EhBasic Colorrange 8(grey) 9(red) - 14(cyan) 15(wht); A2 ran 0(blk) - 7(wht2)
