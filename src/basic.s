@@ -521,16 +521,19 @@ TabLoop:
       STA   g_step            ; save it
       LDX   #des_sk           ; descriptor stack start
       STX   next_s            ; set descriptor stack pointer
-      JSR   LAB_CRLF          ; print CR/LF
-      LDA   #<LAB_MSZM        ; point to memory size message (low addr)
-      LDY   #>LAB_MSZM        ; point to memory size message (high addr)
-      JSR   LAB_18C3          ; print null terminated string from memory
-      JSR   LAB_INLN          ; print "? " and get BASIC input
-      STX   Bpntrl            ; set BASIC execute pointer low byte
-      STY   Bpntrh            ; set BASIC execute pointer high byte
-      JSR   LAB_GBYT          ; get last byte back
 
-      BNE   LAB_2DAA          ; branch if not null (user typed something)
+; uncomment these lines to ask "Memory size ?" on cold boot (1/2)
+
+      ; JSR   LAB_CRLF          ; print CR/LF
+      ; LDA   #<LAB_MSZM        ; point to memory size message (low addr)
+      ; LDY   #>LAB_MSZM        ; point to memory size message (high addr)
+      ; JSR   LAB_18C3          ; print null terminated string from memory
+      ; JSR   LAB_INLN          ; print "? " and get BASIC input
+      ; STX   Bpntrl            ; set BASIC execute pointer low byte
+      ; STY   Bpntrh            ; set BASIC execute pointer high byte
+      ; JSR   LAB_GBYT          ; get last byte back
+
+      ; BNE   LAB_2DAA          ; branch if not null (user typed something)
 
       LDY   #$00              ; else clear Y
                               ; character was null so get memory size the hard way
@@ -555,16 +558,18 @@ LAB_2D99:
       CMP   (Itempl),Y        ; compare via temporary integer
       BEQ   LAB_2D93          ; if ok go do next byte
 
-      BNE   LAB_2DB6          ; branch if fail
+; uncomment these lines to ask "Memory size ?" on cold boot (2/2)
 
-LAB_2DAA:
-      JSR   LAB_2887          ; get FAC1 from string
-      LDA   FAC1_e            ; get FAC1 exponent
-      CMP   #$98              ; compare with exponent = 2^24
-      BCS   LAB_GMEM          ; if too large go try again
+;       BNE   LAB_2DB6          ; branch if fail
 
-      JSR   LAB_F2FU          ; save integer part of FAC1 in temporary integer
-                              ; (no range check)
+; LAB_2DAA:
+;       JSR   LAB_2887          ; get FAC1 from string
+;       LDA   FAC1_e            ; get FAC1 exponent
+;       CMP   #$98              ; compare with exponent = 2^24
+;       BCS   LAB_GMEM          ; if too large go try again
+
+;       JSR   LAB_F2FU          ; save integer part of FAC1 in temporary integer
+;                               ; (no range check)
 
 LAB_2DB6:
       LDA   Itempl            ; get temporary integer low byte
