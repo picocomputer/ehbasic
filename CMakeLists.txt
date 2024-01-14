@@ -6,10 +6,10 @@ add_subdirectory(tools)
 
 add_executable(basic)
 rp6502_executable(basic
-    START 0xC000
-    RESET 0xC000
-    IRQ 0xC002
-    NMI 0xC00C
+    START 0xD000
+    RESET 0xD000
+    IRQ 0xD002
+    NMI 0xD00C
     ${CMAKE_CURRENT_LIST_DIR}/doc/help.rp6502
 )
 target_sources(basic PRIVATE
