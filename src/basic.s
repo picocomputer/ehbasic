@@ -1034,7 +1034,9 @@ LAB_1359:
       BCC   LAB_1359          ; if < ignore character
 
 LAB_1374:
-      CMP   #$7F              ; compare with [BACKSPACE] (delete last character)
+      CMP   #$08              ; compare with $08 [BACKSPACE] (delete last character)
+      BEQ   LAB_134B          ; go delete last character
+      CMP   #$7F              ; compare with $7F [BACKSPACE] (delete last character)
       BEQ   LAB_134B          ; go delete last character
 
       CMP   #$20              ; compare with [SP]
