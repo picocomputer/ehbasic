@@ -511,7 +511,7 @@ TabLoop:
       STA   FAC1_o            ; clear FAC1 overflow byte
       STA   last_sh           ; clear descriptor stack top item pointer high byte
 
-      LDA   #$08              ; set default tab size
+      LDA   #$0E              ; set default tab size to 14
       STA   TabSiz            ; save it
 
       LDA   #$03              ; set garbage collect step size for descriptor stack
@@ -7968,7 +7968,7 @@ StrTab:
       .word V_USR             ; initial user function vector ("Function call" error)
       .byte $00               ; default NULL count
       .byte $00               ; clear terminal position
-      .byte $00               ; default terminal width byte
+      .byte $50               ; default terminal width byte
       .byte $F2               ; default limit for TAB = 14
       .word Ram_base          ; start of user RAM
 EndTab:
