@@ -128,16 +128,10 @@ class ROM:
         if len(self.help) > 24:
             raise RuntimeError("Help lines > 24")
 
-    def add_binary_data(self, data, addr: Union[int, None] = None):
-        """Add binary data. addr=None uses first two bytes as address."""
+    def add_binary_data(self, data, addr: int):
+        """Add binary data."""
         offset = 0
         length = len(data)
-        if addr == None:
-            if length < 2:
-                raise RuntimeError("No address found.")
-            offset += 2
-            length -= 2
-            addr = data[0] + data[1] * 256
         self.allocate_rom(addr, length)
         for i in range(length):
             self.data[addr + i] = data[offset + i]
@@ -167,9 +161,16 @@ class ROM:
         self.data[0xFFFD] = addr >> 8
 
     def add_binary_file(self, file, addr: Union[int, None] = None):
-        """Add binary memory data from file. addr=None uses first two bytes as address."""
+        """Add binary memory data from file. addr=None uses"""
+        """first two bytes as address and second two bytes as reset."""
         with open(file, "rb") as f:
             data = f.read()
+        if addr == None:
+            if len(data) < 4:
+                raise RuntimeError("No addresses found.")
+            addr = data[0] + data[1] * 256
+            self.add_reset_vector(data[2] + data[3] * 256)
+            data = data[4:]
         self.add_binary_data(data, addr)
 
     def add_rp6502_file(self, file):
@@ -293,7 +294,8 @@ def exec_args():
         dest="address",
         metavar="addr",
         help="Starting address of file. If not provided, "
-        "the first two bytes of the file are used.",
+        "the first two bytes of the file are the start address and "
+        "the second two bytes of the file are the reset vector.",
     )
     parser.add_argument("-i", "--irq", dest="irq", metavar="addr", help="IRQ vector.")
     parser.add_argument("-n", "--nmi", dest="nmi", metavar="addr", help="NMI vector.")
