@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "RP6502",
+            "type": "debugpy",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "program": "${workspaceFolder}/tools/rp6502.py",
+            "args": [
+                "-c",
+                "${workspaceFolder}/.rp6502",
+                "run",
+                "${command:cmake.launchTargetPath}.rp6502"
+            ],
+        },
+    ]
+}
