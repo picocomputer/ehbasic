@@ -1,13 +1,9 @@
-# RP6502 - Enhanced 6502 BASIC
+# Lee Davison's Enhanced 6502 BASIC for Picocomputer 6502
 
 Referfence manual and more information archived here:<br>
 http://retro.hansotten.nl/6502-sbc/lee-davison-web-site/enhanced-6502-basic/
 
-You must have on your development system:
- * [VSCode](https://code.visualstudio.com/). This has its own installer.
- * A source install of [this CC65](https://github.com/picocomputer/cc65).
- * The following suite of tools for your specific OS.
-```
-$ sudo apt-get install cmake python3 pip git build-essential
-$ pip install pyserial
-```
+This isn't maintained. Please use:<br>
+https://github.com/picocomputer/msbasic
+
+Of course, you're welcome to fork this and take over.
